@@ -35,18 +35,11 @@ module axi_lite_interface #(
 
     // The RLAST signal is not required, and is considered asserted for every transfer on the read data channel.
     enum logic [1:0] { IDLE, READ, WRITE, WRITE_B } state_q, state_d;
-    // save the trans id, we will need it for reflection otherwise we are not plug compatible to the AXI standard
-    logic [AXI_ID_WIDTH-1:0]   trans_id_n, trans_id_q;
     // address register
     logic [AXI_ADDR_WIDTH-1:0] address_n,  address_q;
 
     // pass through read data on the read data channel
     assign axi_resp_o.r.data = data_i;
-    // send back the transaction id we've latched
-    assign axi_resp_o.r.id = trans_id_q;
-    assign axi_resp_o.b.id = trans_id_q;
-    // set r_last to one as defined by the AXI4 - Lite standard
-    assign axi_resp_o.r.last = 1'b1;
     // we do not support any errors so set response flag to all zeros
     assign axi_resp_o.b.resp = 2'b0;
     assign axi_resp_o.r.resp = 2'b0;
@@ -59,7 +52,6 @@ module axi_lite_interface #(
         // default signal assignment
         state_d    = state_q;
         address_n  = address_q;
-        trans_id_n = trans_id_q;
 
         // we'll answer a write request only if we got address and data
         axi_resp_o.aw_ready = 1'b0;
@@ -84,8 +76,6 @@ module axi_lite_interface #(
                     state_d = WRITE;
                     // save address
                     address_n = axi_req_i.aw.addr;
-                    // save the transaction id for reflection
-                    trans_id_n = axi_req_i.aw.id;
 
                 // we've got a valid read request, we also know that we have asserted the ar_ready
                 end else if (axi_req_i.ar_valid) begin
@@ -93,8 +83,6 @@ module axi_lite_interface #(
                     state_d = READ;
                     // save address
                     address_n = axi_req_i.ar.addr;
-                    // save the transaction id for reflection
-                    trans_id_n = axi_req_i.ar.id;
 
                 end
             end
@@ -143,26 +131,10 @@ module axi_lite_interface #(
         if (!rst_ni) begin
             state_q    <= IDLE;
             address_q  <= '0;
-            trans_id_q <= '0;
         end else begin
             state_q    <= state_d;
             address_q  <= address_n;
-            trans_id_q <= trans_id_n;
         end
     end
-
-    // ------------------------
-    // Assertions
-    // ------------------------
-    // Listen for illegal transactions
-    //pragma translate_off
-    `ifndef VERILATOR
-    // check that burst length is just one
-    assert property (@(posedge clk_i) axi_req_i.ar_valid |->  ((axi_req_i.ar.len == 8'b0)))
-    else begin $error("AXI Lite does not support bursts larger than 1 or byte length unequal to the native bus size"); $stop(); end
-    // do the same for the write channel
-    assert property (@(posedge clk_i) axi_req_i.aw_valid |->  ((axi_req_i.aw.len == 8'b0)))
-    else begin $error("AXI Lite does not support bursts larger than 1 or byte length unequal to the native bus size"); $stop(); end
-    `endif
-    //pragma translate_on
 endmodule
+
