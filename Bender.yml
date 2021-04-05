@@ -4,7 +4,7 @@
 package:
   name: clint
   description: "RISC-V Core-local Interrupt Controller"
-  authors: ["lowRISC Contributors"]
+  authors: ["Florian Zaruba <zarubaf@iis.ee.ethz.ch>"]
 
 sources:
 # Level 0:
