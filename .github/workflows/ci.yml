@@ -1,0 +1,72 @@
+# Copyright 2022 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# Author: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+
+name: ci
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  check-generated:
+    name: Check generated sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          cache: pip
+      - name: Install Python requirements
+        run: pip install -r requirements.txt
+      - name: Check generated sources
+        run: make check_generated
+
+  check-verilog:
+    name: Check Verilog sources
+    runs-on: ubuntu-18.04
+    env:
+      VERIBLE_VERSION: 0.0-807-g10e7c71
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Verible
+      run: |
+        set -e
+        mkdir -p build/verible
+        cd build/verible
+        curl -Ls -o verible.tar.gz https://github.com/google/verible/releases/download/v$VERIBLE_VERSION/verible-v$VERIBLE_VERSION-Ubuntu-18.04-bionic-x86_64.tar.gz
+        sudo mkdir -p /tools/verible && sudo chmod 777 /tools/verible
+        tar -C /tools/verible -xf verible.tar.gz --strip-components=1
+        echo "PATH=$PATH:/tools/verible/bin" >> $GITHUB_ENV
+    - name: Run lint
+      run: |
+        echo "::add-matcher::.github/verible-lint-matcher.json"
+        find src -name "*.sv" | \
+            xargs verible-verilog-lint --waiver_files .github/clint.style.waiver --rules=-interface-name-style --lint_fatal
+        echo "::remove-matcher owner=verible-lint-matcher::"
+
+  check-license:
+    name: Check license
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install Python requirements
+      run: pip install -r requirements.txt
+    - name: Intall license linter
+      run: |
+        cd .github
+        git clone https://github.com/lowRISC/misc-linters.git
+    - name: Check license
+      run: |
+        echo "::add-matcher::.github/license-checker-matcher.json"
+        bash -c "set -e; .github/misc-linters/licence-checker/licence-checker.py --config .github/license-checker.hjson"
+        echo "::remove-matcher owner=license-checker-matcher::"
