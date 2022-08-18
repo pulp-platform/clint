@@ -22,12 +22,12 @@ module clint import clint_reg_pkg::*; #(
     input  reg_req_t            reg_req_i,
     output reg_rsp_t            reg_rsp_o,
     input  logic                rtc_i,       // Real-time clock in (usually 32.768 kHz)
-    output logic [1:0] timer_irq_o, // Timer interrupts
-    output logic [1:0] ipi_o        // software interrupt (a.k.a inter-process-interrupt)
+    output logic [${cores-1}:0] timer_irq_o, // Timer interrupts
+    output logic [${cores-1}:0] ipi_o        // software interrupt (a.k.a inter-process-interrupt)
 );
 
     logic [63:0]               mtime_q;
-    logic [1:0][63:0] mtimecmp_q;
+    logic [${cores-1}:0][63:0] mtimecmp_q;
     // increase the timer
     logic increase_timer;
 
@@ -48,10 +48,10 @@ module clint import clint_reg_pkg::*; #(
     );
 
     assign mtime_q = {reg2hw.mtime_high.q, reg2hw.mtime_low.q};
-    assign mtimecmp_q[0] = {reg2hw.mtimecmp_high0.q, reg2hw.mtimecmp_low0.q};
-    assign ipi_o[0] = reg2hw.msip[0].q;
-    assign mtimecmp_q[1] = {reg2hw.mtimecmp_high1.q, reg2hw.mtimecmp_low1.q};
-    assign ipi_o[1] = reg2hw.msip[1].q;
+% for i in range(cores):
+    assign mtimecmp_q[${i}] = {reg2hw.mtimecmp_high${i}.q, reg2hw.mtimecmp_low${i}.q};
+    assign ipi_o[${i}] = reg2hw.msip[${i}].q;
+% endfor
 
     assign {hw2reg.mtime_high.d, hw2reg.mtime_low.d} = mtime_q + 1;
     assign hw2reg.mtime_low.de = increase_timer;
@@ -67,7 +67,7 @@ module clint import clint_reg_pkg::*; #(
     // if interrupts are enabled and the MTIE bit is set in the mie register.
     always_comb begin : irq_gen
         // check that the mtime cmp register is set to a meaningful value
-        for (int unsigned i = 0; i < 2; i++) begin
+        for (int unsigned i = 0; i < ${cores}; i++) begin
             if (mtime_q >= mtimecmp_q[i]) begin
                 timer_irq_o[i] = 1'b1;
             end else begin
@@ -136,4 +136,3 @@ module clint_sync #(
   assign serial_o = reg_q[STAGES-1];
 
 endmodule
-
