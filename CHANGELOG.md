@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ## 0.1.0 - 2022-08-29
+### Changed
+- Update to IP variant from Snitch repository which uses register_interface.
+
 ### Added
-- Update to IP variant from Snitch repository.
+- Add basic testbench.
+- Add CI.
 - Add make fragment for easy reconfiguration.
