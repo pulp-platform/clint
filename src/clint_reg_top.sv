@@ -8,12 +8,12 @@
 `include "common_cells/assertions.svh"
 
 module clint_reg_top #(
-    parameter type reg_req_t = logic,
-    parameter type reg_rsp_t = logic,
-    parameter int AW = 16
+  parameter type reg_req_t = logic,
+  parameter type reg_rsp_t = logic,
+  parameter int AW = 16
 ) (
-  input clk_i,
-  input rst_ni,
+  input logic clk_i,
+  input logic rst_ni,
   input  reg_req_t reg_req_i,
   output reg_rsp_t reg_rsp_o,
   // To HW
@@ -33,7 +33,7 @@ module clint_reg_top #(
   // register signals
   logic           reg_we;
   logic           reg_re;
-  logic [AW-1:0]  reg_addr;
+  logic [BlockAw-1:0]  reg_addr;
   logic [DW-1:0]  reg_wdata;
   logic [DBW-1:0] reg_be;
   logic [DW-1:0]  reg_rdata;
@@ -54,7 +54,7 @@ module clint_reg_top #(
 
   assign reg_we = reg_intf_req.valid & reg_intf_req.write;
   assign reg_re = reg_intf_req.valid & ~reg_intf_req.write;
-  assign reg_addr = reg_intf_req.addr;
+  assign reg_addr = reg_intf_req.addr[BlockAw-1:0];
   assign reg_wdata = reg_intf_req.wdata;
   assign reg_be = reg_intf_req.wstrb;
   assign reg_intf_rsp.rdata = reg_rdata;
@@ -68,12 +68,14 @@ module clint_reg_top #(
   // Define SW related signals
   // Format: <reg>_<field>_{wd|we|qs}
   //        or <reg>_{wd|we|qs} if field == 1 or 0
-  logic msip_p_0_qs;
-  logic msip_p_0_wd;
-  logic msip_p_0_we;
-  logic msip_p_1_qs;
-  logic msip_p_1_wd;
-  logic msip_p_1_we;
+  logic msip_0_p_0_qs;
+  logic msip_0_p_0_wd;
+  logic msip_0_p_0_we;
+  logic [30:0] msip_0_rsvd_0_qs;
+  logic msip_1_p_1_qs;
+  logic msip_1_p_1_wd;
+  logic msip_1_p_1_we;
+  logic [30:0] msip_1_rsvd_1_qs;
   logic [31:0] mtimecmp_low0_qs;
   logic [31:0] mtimecmp_low0_wd;
   logic mtimecmp_low0_we;
@@ -96,20 +98,20 @@ module clint_reg_top #(
   // Register instances
 
   // Subregister 0 of Multireg msip
-  // R[msip]: V(False)
+  // R[msip_0]: V(False)
 
   // F[p_0]: 0:0
   prim_subreg #(
     .DW      (1),
     .SWACCESS("RW"),
     .RESVAL  (1'h0)
-  ) u_msip_p_0 (
+  ) u_msip_0_p_0 (
     .clk_i   (clk_i    ),
     .rst_ni  (rst_ni  ),
 
     // from register interface
-    .we     (msip_p_0_we),
-    .wd     (msip_p_0_wd),
+    .we     (msip_0_p_0_we),
+    .wd     (msip_0_p_0_wd),
 
     // from internal hardware
     .de     (1'b0),
@@ -117,25 +119,33 @@ module clint_reg_top #(
 
     // to internal hardware
     .qe     (),
-    .q      (reg2hw.msip[0].q ),
+    .q      (reg2hw.msip[0].p.q ),
 
     // to register interface (read)
-    .qs     (msip_p_0_qs)
+    .qs     (msip_0_p_0_qs)
   );
 
 
-  // F[p_1]: 1:1
+  // F[rsvd_0]: 31:1
+  // constant-only read
+  assign msip_0_rsvd_0_qs = 31'h0;
+
+
+  // Subregister 1 of Multireg msip
+  // R[msip_1]: V(False)
+
+  // F[p_1]: 0:0
   prim_subreg #(
     .DW      (1),
     .SWACCESS("RW"),
     .RESVAL  (1'h0)
-  ) u_msip_p_1 (
+  ) u_msip_1_p_1 (
     .clk_i   (clk_i    ),
     .rst_ni  (rst_ni  ),
 
     // from register interface
-    .we     (msip_p_1_we),
-    .wd     (msip_p_1_wd),
+    .we     (msip_1_p_1_we),
+    .wd     (msip_1_p_1_wd),
 
     // from internal hardware
     .de     (1'b0),
@@ -143,11 +153,16 @@ module clint_reg_top #(
 
     // to internal hardware
     .qe     (),
-    .q      (reg2hw.msip[1].q ),
+    .q      (reg2hw.msip[1].p.q ),
 
     // to register interface (read)
-    .qs     (msip_p_1_qs)
+    .qs     (msip_1_p_1_qs)
   );
+
+
+  // F[rsvd_1]: 31:1
+  // constant-only read
+  assign msip_1_rsvd_1_qs = 31'h0;
 
 
 
@@ -315,16 +330,17 @@ module clint_reg_top #(
 
 
 
-  logic [6:0] addr_hit;
+  logic [7:0] addr_hit;
   always_comb begin
     addr_hit = '0;
-    addr_hit[0] = (reg_addr == CLINT_MSIP_OFFSET);
-    addr_hit[1] = (reg_addr == CLINT_MTIMECMP_LOW0_OFFSET);
-    addr_hit[2] = (reg_addr == CLINT_MTIMECMP_HIGH0_OFFSET);
-    addr_hit[3] = (reg_addr == CLINT_MTIMECMP_LOW1_OFFSET);
-    addr_hit[4] = (reg_addr == CLINT_MTIMECMP_HIGH1_OFFSET);
-    addr_hit[5] = (reg_addr == CLINT_MTIME_LOW_OFFSET);
-    addr_hit[6] = (reg_addr == CLINT_MTIME_HIGH_OFFSET);
+    addr_hit[0] = (reg_addr == CLINT_MSIP_0_OFFSET);
+    addr_hit[1] = (reg_addr == CLINT_MSIP_1_OFFSET);
+    addr_hit[2] = (reg_addr == CLINT_MTIMECMP_LOW0_OFFSET);
+    addr_hit[3] = (reg_addr == CLINT_MTIMECMP_HIGH0_OFFSET);
+    addr_hit[4] = (reg_addr == CLINT_MTIMECMP_LOW1_OFFSET);
+    addr_hit[5] = (reg_addr == CLINT_MTIMECMP_HIGH1_OFFSET);
+    addr_hit[6] = (reg_addr == CLINT_MTIME_LOW_OFFSET);
+    addr_hit[7] = (reg_addr == CLINT_MTIME_HIGH_OFFSET);
   end
 
   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
@@ -338,31 +354,32 @@ module clint_reg_top #(
                (addr_hit[3] & (|(CLINT_PERMIT[3] & ~reg_be))) |
                (addr_hit[4] & (|(CLINT_PERMIT[4] & ~reg_be))) |
                (addr_hit[5] & (|(CLINT_PERMIT[5] & ~reg_be))) |
-               (addr_hit[6] & (|(CLINT_PERMIT[6] & ~reg_be)))));
+               (addr_hit[6] & (|(CLINT_PERMIT[6] & ~reg_be))) |
+               (addr_hit[7] & (|(CLINT_PERMIT[7] & ~reg_be)))));
   end
 
-  assign msip_p_0_we = addr_hit[0] & reg_we & !reg_error;
-  assign msip_p_0_wd = reg_wdata[0];
+  assign msip_0_p_0_we = addr_hit[0] & reg_we & !reg_error;
+  assign msip_0_p_0_wd = reg_wdata[0];
 
-  assign msip_p_1_we = addr_hit[0] & reg_we & !reg_error;
-  assign msip_p_1_wd = reg_wdata[1];
+  assign msip_1_p_1_we = addr_hit[1] & reg_we & !reg_error;
+  assign msip_1_p_1_wd = reg_wdata[0];
 
-  assign mtimecmp_low0_we = addr_hit[1] & reg_we & !reg_error;
+  assign mtimecmp_low0_we = addr_hit[2] & reg_we & !reg_error;
   assign mtimecmp_low0_wd = reg_wdata[31:0];
 
-  assign mtimecmp_high0_we = addr_hit[2] & reg_we & !reg_error;
+  assign mtimecmp_high0_we = addr_hit[3] & reg_we & !reg_error;
   assign mtimecmp_high0_wd = reg_wdata[31:0];
 
-  assign mtimecmp_low1_we = addr_hit[3] & reg_we & !reg_error;
+  assign mtimecmp_low1_we = addr_hit[4] & reg_we & !reg_error;
   assign mtimecmp_low1_wd = reg_wdata[31:0];
 
-  assign mtimecmp_high1_we = addr_hit[4] & reg_we & !reg_error;
+  assign mtimecmp_high1_we = addr_hit[5] & reg_we & !reg_error;
   assign mtimecmp_high1_wd = reg_wdata[31:0];
 
-  assign mtime_low_we = addr_hit[5] & reg_we & !reg_error;
+  assign mtime_low_we = addr_hit[6] & reg_we & !reg_error;
   assign mtime_low_wd = reg_wdata[31:0];
 
-  assign mtime_high_we = addr_hit[6] & reg_we & !reg_error;
+  assign mtime_high_we = addr_hit[7] & reg_we & !reg_error;
   assign mtime_high_wd = reg_wdata[31:0];
 
   // Read data return
@@ -370,31 +387,36 @@ module clint_reg_top #(
     reg_rdata_next = '0;
     unique case (1'b1)
       addr_hit[0]: begin
-        reg_rdata_next[0] = msip_p_0_qs;
-        reg_rdata_next[1] = msip_p_1_qs;
+        reg_rdata_next[0] = msip_0_p_0_qs;
+        reg_rdata_next[31:1] = msip_0_rsvd_0_qs;
       end
 
       addr_hit[1]: begin
-        reg_rdata_next[31:0] = mtimecmp_low0_qs;
+        reg_rdata_next[0] = msip_1_p_1_qs;
+        reg_rdata_next[31:1] = msip_1_rsvd_1_qs;
       end
 
       addr_hit[2]: begin
-        reg_rdata_next[31:0] = mtimecmp_high0_qs;
+        reg_rdata_next[31:0] = mtimecmp_low0_qs;
       end
 
       addr_hit[3]: begin
-        reg_rdata_next[31:0] = mtimecmp_low1_qs;
+        reg_rdata_next[31:0] = mtimecmp_high0_qs;
       end
 
       addr_hit[4]: begin
-        reg_rdata_next[31:0] = mtimecmp_high1_qs;
+        reg_rdata_next[31:0] = mtimecmp_low1_qs;
       end
 
       addr_hit[5]: begin
-        reg_rdata_next[31:0] = mtime_low_qs;
+        reg_rdata_next[31:0] = mtimecmp_high1_qs;
       end
 
       addr_hit[6]: begin
+        reg_rdata_next[31:0] = mtime_low_qs;
+      end
+
+      addr_hit[7]: begin
         reg_rdata_next[31:0] = mtime_high_qs;
       end
 
@@ -417,3 +439,55 @@ module clint_reg_top #(
   `ASSERT(en2addrHit, (reg_we || reg_re) |-> $onehot0(addr_hit))
 
 endmodule
+
+module clint_reg_top_intf
+#(
+  parameter int AW = 16,
+  localparam int DW = 32
+) (
+  input logic clk_i,
+  input logic rst_ni,
+  REG_BUS.in  regbus_slave,
+  // To HW
+  output clint_reg_pkg::clint_reg2hw_t reg2hw, // Write
+  input  clint_reg_pkg::clint_hw2reg_t hw2reg, // Read
+  // Config
+  input devmode_i // If 1, explicit error return for unmapped register access
+);
+ localparam int unsigned STRB_WIDTH = DW/8;
+
+`include "register_interface/typedef.svh"
+`include "register_interface/assign.svh"
+
+  // Define structs for reg_bus
+  typedef logic [AW-1:0] addr_t;
+  typedef logic [DW-1:0] data_t;
+  typedef logic [STRB_WIDTH-1:0] strb_t;
+  `REG_BUS_TYPEDEF_ALL(reg_bus, addr_t, data_t, strb_t)
+
+  reg_bus_req_t s_reg_req;
+  reg_bus_rsp_t s_reg_rsp;
+  
+  // Assign SV interface to structs
+  `REG_BUS_ASSIGN_TO_REQ(s_reg_req, regbus_slave)
+  `REG_BUS_ASSIGN_FROM_RSP(regbus_slave, s_reg_rsp)
+
+  
+
+  clint_reg_top #(
+    .reg_req_t(reg_bus_req_t),
+    .reg_rsp_t(reg_bus_rsp_t),
+    .AW(AW)
+  ) i_regs (
+    .clk_i,
+    .rst_ni,
+    .reg_req_i(s_reg_req),
+    .reg_rsp_o(s_reg_rsp),
+    .reg2hw, // Write
+    .hw2reg, // Read
+    .devmode_i
+  );
+  
+endmodule
+
+

@@ -28,7 +28,8 @@
         swaccess: "rw",
         hwaccess: "hro",
         fields: [
-          { bits: "0", name: "P", desc: "Machine Software Interrupt Pending" }
+          { bits: "0", name: "P", desc: "Machine Software Interrupt Pending" },
+          { bits: "31:1", name: "RSVD", desc: "Reserved", resval: "0", swaccess: "ro", hwaccess: "none" }
         ]
       }
     },

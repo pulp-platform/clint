@@ -49,9 +49,9 @@ module clint import clint_reg_pkg::*; #(
 
     assign mtime_q = {reg2hw.mtime_high.q, reg2hw.mtime_low.q};
     assign mtimecmp_q[0] = {reg2hw.mtimecmp_high0.q, reg2hw.mtimecmp_low0.q};
-    assign ipi_o[0] = reg2hw.msip[0].q;
+    assign ipi_o[0] = reg2hw.msip[0].p.q;
     assign mtimecmp_q[1] = {reg2hw.mtimecmp_high1.q, reg2hw.mtimecmp_low1.q};
-    assign ipi_o[1] = reg2hw.msip[1].q;
+    assign ipi_o[1] = reg2hw.msip[1].p.q;
 
     assign {hw2reg.mtime_high.d, hw2reg.mtime_low.d} = mtime_q + 1;
     assign hw2reg.mtime_low.de = increase_timer;
