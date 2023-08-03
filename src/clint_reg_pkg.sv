@@ -17,7 +17,9 @@ package clint_reg_pkg;
   ////////////////////////////
 
   typedef struct packed {
-    logic        q;
+    struct packed {
+      logic        q;
+    } p;
   } clint_reg2hw_msip_mreg_t;
 
   typedef struct packed {
@@ -72,7 +74,8 @@ package clint_reg_pkg;
   } clint_hw2reg_t;
 
   // Register offsets
-  parameter logic [BlockAw-1:0] CLINT_MSIP_OFFSET = 16'h 0;
+  parameter logic [BlockAw-1:0] CLINT_MSIP_0_OFFSET = 16'h 0;
+  parameter logic [BlockAw-1:0] CLINT_MSIP_1_OFFSET = 16'h 4;
   parameter logic [BlockAw-1:0] CLINT_MTIMECMP_LOW0_OFFSET = 16'h 4000;
   parameter logic [BlockAw-1:0] CLINT_MTIMECMP_HIGH0_OFFSET = 16'h 4004;
   parameter logic [BlockAw-1:0] CLINT_MTIMECMP_LOW1_OFFSET = 16'h 4008;
@@ -82,7 +85,8 @@ package clint_reg_pkg;
 
   // Register index
   typedef enum int {
-    CLINT_MSIP,
+    CLINT_MSIP_0,
+    CLINT_MSIP_1,
     CLINT_MTIMECMP_LOW0,
     CLINT_MTIMECMP_HIGH0,
     CLINT_MTIMECMP_LOW1,
@@ -92,14 +96,15 @@ package clint_reg_pkg;
   } clint_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] CLINT_PERMIT [7] = '{
-    4'b 0001, // index[0] CLINT_MSIP
-    4'b 1111, // index[1] CLINT_MTIMECMP_LOW0
-    4'b 1111, // index[2] CLINT_MTIMECMP_HIGH0
-    4'b 1111, // index[3] CLINT_MTIMECMP_LOW1
-    4'b 1111, // index[4] CLINT_MTIMECMP_HIGH1
-    4'b 1111, // index[5] CLINT_MTIME_LOW
-    4'b 1111  // index[6] CLINT_MTIME_HIGH
+  parameter logic [3:0] CLINT_PERMIT [8] = '{
+    4'b 1111, // index[0] CLINT_MSIP_0
+    4'b 1111, // index[1] CLINT_MSIP_1
+    4'b 1111, // index[2] CLINT_MTIMECMP_LOW0
+    4'b 1111, // index[3] CLINT_MTIMECMP_HIGH0
+    4'b 1111, // index[4] CLINT_MTIMECMP_LOW1
+    4'b 1111, // index[5] CLINT_MTIMECMP_HIGH1
+    4'b 1111, // index[6] CLINT_MTIME_LOW
+    4'b 1111  // index[7] CLINT_MTIME_HIGH
   };
 
 endpackage
