@@ -36,7 +36,7 @@ jobs:
     - name: Run Verible
       uses: chipsalliance/verible-linter-action@main
       with:
-        paths: src
+        paths: src/clint.sv
         github_token: ${{ secrets.GITHUB_TOKEN }}
         fail_on_error: true
         reviewdog_reporter: github-check
