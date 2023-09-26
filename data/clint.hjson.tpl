@@ -18,6 +18,12 @@
       default: "${cores}",
       local: "true"
     }
+    { name: "MaxOffloads",
+      desc: "Maximum number of outstanding offloads",
+      type: "int",
+      default: "${nr_s1_quadrants * nr_s1_clusters}",
+      local: "true"
+    }
   ],
   registers: [
     { multireg: {
@@ -26,13 +32,36 @@
         count: "NumCores",
         cname: "MSIP",
         swaccess: "rw",
-        hwaccess: "hro",
+        hwaccess: "hrw",
         fields: [
           { bits: "0", name: "P", desc: "Machine Software Interrupt Pending" },
-          { bits: "31:1", name: "RSVD", desc: "Reserved", resval: "0", swaccess: "ro", hwaccess: "none" }
+          { bits: "31:1", name: "ID", desc: "An ID or cause associated to the interrupt", resval: "0" }
         ]
       }
     },
+    { multireg: {
+        name: "RETURN_TO_CVA6",
+        desc: "Return to CVA6",
+        count: "MaxOffloads",
+        cname: "RETURN_TO_CVA6",
+        swaccess: "wo",
+        hwext: "true",
+        hwqe: "true",
+        fields: [
+          { bits: "0", name: "RETURN_TO_CVA6", desc: "Return to CVA6" }
+        ]
+      }
+    },
+% for i in range(nr_s1_quadrants * nr_s1_clusters):
+    {   name: "OFFLOAD${i}",
+        desc: "Offload descriptor",
+        swaccess: "wo",
+        hwaccess: "hro",
+        fields: [
+          { bits: "31:0", name: "NUM_CLUSTERS", desc: "Offload descriptor ${i}: number of clusters" }
+        ]
+    },
+% endfor
     { skipto: "0x4000" },
 % for i in range(cores):
     {   name: "MTIMECMP_LOW${i}",

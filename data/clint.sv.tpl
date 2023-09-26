@@ -31,6 +31,9 @@ module clint import clint_reg_pkg::*; #(
     // increase the timer
     logic increase_timer;
 
+    logic [${nr_s1_quadrants * nr_s1_clusters-1}:0][$clog2(${nr_s1_quadrants * nr_s1_clusters} + 1)-1:0] arrivals_q, arrivals_d;
+    logic [${nr_s1_quadrants * nr_s1_clusters-1}:0] offload_done_valid, offload_done_ready;
+
     clint_reg_pkg::clint_reg2hw_t reg2hw;
     clint_reg_pkg::clint_hw2reg_t hw2reg;
 
@@ -48,6 +51,54 @@ module clint import clint_reg_pkg::*; #(
     );
 
     assign mtime_q = {reg2hw.mtime_high.q, reg2hw.mtime_low.q};
+
+    `FF(arrivals_q, arrivals_d, 1'b0)
+
+% for i in range(nr_s1_quadrants * nr_s1_clusters):
+    assign offload_done_valid[${i}] = (arrivals_q[${i}] == reg2hw.offload${i}.q) && (arrivals_q[${i}] != '0);
+
+    always_comb begin
+        arrivals_d[${i}] = arrivals_q[${i}];
+
+        // Increment arrivals counter
+        if (reg2hw.return_to_cva6[${i}].qe && reg2hw.return_to_cva6[${i}].q) begin
+            arrivals_d[${i}] = arrivals_q[${i}] + 1;
+        end
+
+        // Reset arrivals counter
+        if (offload_done_valid[${i}] && offload_done_ready[${i}]) begin
+            arrivals_d[${i}] = '0;
+        end
+    end
+% endfor
+
+    always_comb begin
+        hw2reg.msip[0].p.de = 1'b0;
+        hw2reg.msip[0].p.d = '0;
+        hw2reg.msip[0].id.de = 1'b0;
+        hw2reg.msip[0].id.d = '0;
+        offload_done_ready = '0;
+
+        // Priority encoder to select one offload completion to forward to CVA6
+        for (int unsigned i = 0; i < ${nr_s1_quadrants * nr_s1_clusters}; i++) begin
+            if (offload_done_valid[i]) begin
+                offload_done_ready[i] = !reg2hw.msip[0].p.q;
+                hw2reg.msip[0].id.de = !reg2hw.msip[0].p.q;
+                hw2reg.msip[0].id.d = i;
+                hw2reg.msip[0].p.de = !reg2hw.msip[0].p.q;
+                hw2reg.msip[0].p.d = 1;
+                break;
+            end
+        end
+    end
+
+% for i in range(1, cores):
+    assign hw2reg.msip[${i}].id.de = 1'b0;
+    assign hw2reg.msip[${i}].id.d = '0;
+    assign hw2reg.msip[${i}].p.de = 1'b0;
+    assign hw2reg.msip[${i}].p.d = '0;
+% endfor
+
 % for i in range(cores):
     assign mtimecmp_q[${i}] = {reg2hw.mtimecmp_high${i}.q, reg2hw.mtimecmp_low${i}.q};
     assign ipi_o[${i}] = reg2hw.msip[${i}].p.q;
