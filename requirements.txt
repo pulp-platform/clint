@@ -1,2 +1,3 @@
+hjson
 peakrdl
 peakrdl-regblock

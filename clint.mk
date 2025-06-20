@@ -18,6 +18,8 @@ PEAKRDL    ?= peakrdl
 
 _clint: $(CLINTROOT)/rdl/clint.rdl
 	$(PEAKRDL) regblock $< -o $(CLINTROOT)/src --cpuif apb4-flat --default-reset arst_n --module-name clint_reg_top --package-name clint_reg_pkg -P NumCores=$(CLINTCORES)
+		@sed -i '1i// Copyright 2025 ETH Zurich and University of Bologna.\n// Licensed under the Apache License, Version 2.0, see LICENSE for details.\n// SPDX-License-Identifier: Apache-2.0\n' src/clint_reg*.sv
+
 
 clint:
 	@echo "[PULP] Generate CLINT (CLINTCORES=$(CLINTCORES))"
