@@ -51,13 +51,16 @@ module clint import clint_reg_pkg::*; #(
       .hwif_in  (hw2reg) // Read
     );
 
-    assign mtime_q = {reg2hw.mtime.mtime_high.MTIME_HIGH.value, reg2hw.mtime.mtime_low.MTIME_LOW.value};
+    assign mtime_q = {reg2hw.mtime.mtime_high.MTIME_HIGH.value,
+                      reg2hw.mtime.mtime_low.MTIME_LOW.value};
     for (genvar i = 0; i < NumCores; i++) begin : gen_mtimecmp
-        assign mtimecmp_q[i] = {reg2hw.mtimecmp[i].mtimecmp_high.MTIMECMP_HIGH.value, reg2hw.mtimecmp[i].mtimecmp_low.MTIMECMP_LOW.value};
+        assign mtimecmp_q[i] = {reg2hw.mtimecmp[i].mtimecmp_high.MTIMECMP_HIGH.value,
+                                reg2hw.mtimecmp[i].mtimecmp_low.MTIMECMP_LOW.value};
         assign ipi_o[i] = reg2hw.msip[i].P.value;
     end
 
-    assign {hw2reg.mtime.mtime_high.MTIME_HIGH.next, hw2reg.mtime.mtime_low.MTIME_LOW.next} = mtime_q + 1;
+    assign {hw2reg.mtime.mtime_high.MTIME_HIGH.next,
+            hw2reg.mtime.mtime_low.MTIME_LOW.next} = mtime_q + 1;
     assign hw2reg.mtime.mtime_low.MTIME_LOW.we = increase_timer;
     assign hw2reg.mtime.mtime_high.MTIME_HIGH.we = increase_timer;
 
