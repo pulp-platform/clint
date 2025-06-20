@@ -4,15 +4,15 @@
 //
 // Author: Florian Zaruba, ETH Zurich
 
-`include "register_interface/assign.svh"
-`include "register_interface/typedef.svh"
+`include "apb/assign.svh"
+`include "apb/typedef.svh"
 
 module clint_tb;
 
   localparam time ClkPeriod = 10ns;
   localparam time RTCClkPeriod = 30ns;
 
-  `REG_BUS_TYPEDEF_ALL(dut, logic [31:0], logic [31:0], logic [3:0])
+  `APB_TYPEDEF_ALL(dut, logic [31:0], logic [31:0], logic [3:0])
 
   logic clk, rst_n, rtc;
   logic [1:0] timer_irq, ipi;
@@ -41,28 +41,28 @@ module clint_tb;
     end
   end
 
-  REG_BUS #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) reg_dut(clk);
+  APB_DV #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_dut(clk);
   dut_req_t dut_req;
-  dut_rsp_t dut_rsp;
+  dut_resp_t dut_rsp;
 
-  `REG_BUS_ASSIGN_TO_REQ(dut_req, reg_dut)
-  `REG_BUS_ASSIGN_FROM_RSP(reg_dut, dut_rsp)
+  `APB_ASSIGN_TO_REQ(dut_req, apb_dut)
+  `APB_ASSIGN_FROM_RESP(apb_dut, dut_rsp)
 
-  typedef reg_test::reg_driver #(
-    .AW (32), .DW (32), .TA (ClkPeriod*0.2), .TT (ClkPeriod*0.8)
-  ) reg_driver_t;
+  typedef apb_test::apb_driver #(
+    .ADDR_WIDTH (32), .DATA_WIDTH (32), .TA (ClkPeriod*0.2), .TT (ClkPeriod*0.8)
+  ) apb_driver_t;
 
-  reg_driver_t driver = new (reg_dut);
+  apb_driver_t driver = new (apb_dut);
 
   clint #(
-    .reg_req_t (dut_req_t),
-    .reg_rsp_t (dut_rsp_t)
+    .apb_req_t (dut_req_t),
+    .apb_rsp_t (dut_resp_t)
   ) dut (
     .clk_i (clk),
     .rst_ni (rst_n),
     .testmode_i (1'b0),
-    .reg_req_i (dut_req),
-    .reg_rsp_o (dut_rsp),
+    .apb_req_i (dut_req),
+    .apb_rsp_o (dut_rsp),
     .rtc_i (rtc),
     .timer_irq_o (timer_irq),
     .ipi_o (ipi)
@@ -76,14 +76,14 @@ module clint_tb;
     automatic logic error;
     driver.reset_master();
     @(posedge rst_n);
-    driver.send_write(MSIPBase, 1, 1, error);
+    driver.write(MSIPBase, 1, 1, error);
     @(posedge clk);
     assert(ipi[0] == 1);
-    driver.send_write(MTIMECMPBase, 32'hffff, 4'hf, error);
+    driver.write(MTIMECMPBase, 32'hffff, 4'hf, error);
     @(posedge clk);
     assert(timer_irq[0] == 0);
     assert(timer_irq[1] == 1);
-    driver.send_write(MTIMEBase, 32'hffff_ffff, 4'hf, error);
+    driver.write(MTIMEBase, 32'hffff_ffff, 4'hf, error);
     @(posedge clk);
     assert(timer_irq[0] == 1);
     assert(timer_irq[1] == 1);

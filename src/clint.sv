@@ -13,49 +13,53 @@
 `include "common_cells/registers.svh"
 
 module clint import clint_reg_pkg::*; #(
-    parameter type reg_req_t = logic,
-    parameter type reg_rsp_t = logic
+    parameter type apb_req_t = logic,
+    parameter type apb_rsp_t = logic
 ) (
     input  logic                clk_i,       // Clock
     input  logic                rst_ni,      // Asynchronous reset active low
     input  logic                testmode_i,
-    input  reg_req_t            reg_req_i,
-    output reg_rsp_t            reg_rsp_o,
+    input  apb_req_t            apb_req_i,
+    output apb_rsp_t            apb_rsp_o,
     input  logic                rtc_i,       // Real-time clock in (usually 32.768 kHz)
-    output logic [1:0] timer_irq_o, // Timer interrupts
-    output logic [1:0] ipi_o        // software interrupt (a.k.a inter-process-interrupt)
+    output logic [NumCores-1:0] timer_irq_o, // Timer interrupts
+    output logic [NumCores-1:0] ipi_o        // software interrupt (a.k.a inter-process-interrupt)
 );
 
     logic [63:0]               mtime_q;
-    logic [1:0][63:0] mtimecmp_q;
+    logic [NumCores-1:0][63:0] mtimecmp_q;
     // increase the timer
     logic increase_timer;
 
-    clint_reg_pkg::clint_reg2hw_t reg2hw;
-    clint_reg_pkg::clint_hw2reg_t hw2reg;
+    clint_reg_pkg::clint__out_t reg2hw;
+    clint_reg_pkg::clint__in_t hw2reg;
 
-    clint_reg_top #(
-      .reg_req_t (reg_req_t),
-      .reg_rsp_t (reg_rsp_t)
-    ) i_clint_reg_top (
-      .clk_i,
-      .rst_ni,
-      .reg_req_i,
-      .reg_rsp_o,
-      .reg2hw (reg2hw), // Write
-      .hw2reg (hw2reg), // Read
-      .devmode_i (1'b0)
+    clint_reg_top i_clint_reg_top (
+      .clk (clk_i),
+      .arst_n (rst_ni),
+      .s_apb_psel    (apb_req_i.psel),
+      .s_apb_penable (apb_req_i.penable),
+      .s_apb_pwrite  (apb_req_i.pwrite),
+      .s_apb_pprot   (apb_req_i.pprot),
+      .s_apb_paddr   (apb_req_i.paddr[CLINT_REG_TOP_MIN_ADDR_WIDTH-1:0]),
+      .s_apb_pwdata  (apb_req_i.pwdata),
+      .s_apb_pstrb   (apb_req_i.pstrb),
+      .s_apb_pready  (apb_rsp_o.pready),
+      .s_apb_prdata  (apb_rsp_o.prdata),
+      .s_apb_pslverr (apb_rsp_o.pslverr),
+      .hwif_out (reg2hw), // Write
+      .hwif_in  (hw2reg) // Read
     );
 
-    assign mtime_q = {reg2hw.mtime_high.q, reg2hw.mtime_low.q};
-    assign mtimecmp_q[0] = {reg2hw.mtimecmp_high0.q, reg2hw.mtimecmp_low0.q};
-    assign ipi_o[0] = reg2hw.msip[0].p.q;
-    assign mtimecmp_q[1] = {reg2hw.mtimecmp_high1.q, reg2hw.mtimecmp_low1.q};
-    assign ipi_o[1] = reg2hw.msip[1].p.q;
+    assign mtime_q = {reg2hw.mtime.mtime_high.MTIME_HIGH.value, reg2hw.mtime.mtime_low.MTIME_LOW.value};
+    for (genvar i = 0; i < NumCores; i++) begin : gen_mtimecmp
+        assign mtimecmp_q[i] = {reg2hw.mtimecmp[i].mtimecmp_high.MTIMECMP_HIGH.value, reg2hw.mtimecmp[i].mtimecmp_low.MTIMECMP_LOW.value};
+        assign ipi_o[i] = reg2hw.msip[i].P.value;
+    end
 
-    assign {hw2reg.mtime_high.d, hw2reg.mtime_low.d} = mtime_q + 1;
-    assign hw2reg.mtime_low.de = increase_timer;
-    assign hw2reg.mtime_high.de = increase_timer;
+    assign {hw2reg.mtime.mtime_high.MTIME_HIGH.next, hw2reg.mtime.mtime_low.MTIME_LOW.next} = mtime_q + 1;
+    assign hw2reg.mtime.mtime_low.MTIME_LOW.we = increase_timer;
+    assign hw2reg.mtime.mtime_high.MTIME_HIGH.we = increase_timer;
 
     // -----------------------------
     // IRQ Generation
@@ -67,7 +71,7 @@ module clint import clint_reg_pkg::*; #(
     // if interrupts are enabled and the MTIE bit is set in the mie register.
     always_comb begin : irq_gen
         // check that the mtime cmp register is set to a meaningful value
-        for (int unsigned i = 0; i < 2; i++) begin
+        for (int unsigned i = 0; i < NumCores; i++) begin
             if (mtime_q >= mtimecmp_q[i]) begin
                 timer_irq_o[i] = 1'b1;
             end else begin

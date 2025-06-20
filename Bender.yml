@@ -8,7 +8,7 @@ package:
 
 dependencies:
   common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.25.0 }
-  register_interface: { git: https://github.com/pulp-platform/register_interface.git, version: 0.3.3 }
+  apb: { git: "https://github.com/pulp-platform/apb.git", version: 0.2.4 }
 
 sources:
 # Level 0:

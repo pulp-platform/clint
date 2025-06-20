@@ -12,19 +12,12 @@
 
 # You may need to adapt these environment variables to your configuration.
 BENDER     ?= bender
-REGTOOL    ?= $(shell $(BENDER) path register_interface)/vendor/lowrisc_opentitan/util/regtool.py
 CLINTCORES ?= 2
 CLINTROOT  ?= $(shell $(BENDER) path clint)
-CLINTTOOL  ?= $(CLINTROOT)/util/gen_clint.py
+PEAKRDL    ?= peakrdl
 
-$(CLINTROOT)/src/clint.hjson: $(CLINTROOT)/data/clint.hjson.tpl
-	$(CLINTTOOL) $< -c $(CLINTCORES) > $@
-
-$(CLINTROOT)/src/clint.sv: $(CLINTROOT)/data/clint.sv.tpl
-	$(CLINTTOOL) $< -c $(CLINTCORES) > $@
-
-_clint: $(CLINTROOT)/src/clint.hjson $(CLINTROOT)/src/clint.sv $(REGTOOL)
-	$(REGTOOL) $< -r --outdir $(CLINTROOT)/src/
+_clint: $(CLINTROOT)/rdl/clint.rdl
+	$(PEAKRDL) regblock $< -o $(CLINTROOT)/src --cpuif apb4-flat --default-reset arst_n --module-name clint_reg_top --package-name clint_reg_pkg -P NumCores=$(CLINTCORES)
 
 clint:
 	@echo "[PULP] Generate CLINT (CLINTCORES=$(CLINTCORES))"
