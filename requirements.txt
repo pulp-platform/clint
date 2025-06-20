@@ -1,3 +1,4 @@
 hjson
+tabulate
 peakrdl
 peakrdl-regblock
