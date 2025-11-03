@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: SHL-0.51
 package:
   name: clint
-  description: RISC-V Core-local Interrupt Controller
   authors: [Florian Zaruba <zarubaf@iis.ee.ethz.ch>]
 
 dependencies:
