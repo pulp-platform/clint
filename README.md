@@ -16,15 +16,13 @@ The CLINT plugs into a [generic register interface](https://github.com/pulp-plat
 To simplify CLINT reconfiguration in your project, you can include the GNU Make fragment `clint.mk` in your makefile, for example:
 
 ```make
-include $(bender path clint)/clint.mk
+CLINTROOT ?= $(shell bender path clint)
 
 # Alternative number of cores
 CLINTCORES = 4
 
-# Alternative register config template
-$(CLINTROOT)/data/clint.hjson.tpl: config/clint.hjson.tpl
-    cp $< $@
+include $(CLINTROOT)/clint.mk
 
 # Rebuild CLINT RTL
-all: clint
+all: $(CLINTROOT)/src/clint_reg.sv
 ```
