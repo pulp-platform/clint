@@ -7,92 +7,91 @@
 
 package clint_reg_pkg;
 
-    localparam CLINT_REG_TOP_DATA_WIDTH = 32;
-    localparam CLINT_REG_TOP_MIN_ADDR_WIDTH = 16;
-    localparam CLINT_REG_TOP_SIZE = 'hc000;
-
+    localparam CLINT_REG_DATA_WIDTH = 32;
+    localparam CLINT_REG_MIN_ADDR_WIDTH = 16;
+    localparam CLINT_REG_SIZE = 'hc000;
     localparam NumCores = 'h2;
 
     typedef struct {
         logic [31:0] next;
         logic we;
-    } clint_NumCores_2__mtime__mtime_low__MTIME_LOW__in_t;
+    } clint__mtime__low__value__in_t;
 
     typedef struct {
-        clint_NumCores_2__mtime__mtime_low__MTIME_LOW__in_t MTIME_LOW;
-    } clint_NumCores_2__mtime__mtime_low__in_t;
+        clint__mtime__low__value__in_t value;
+    } clint__mtime__low__in_t;
 
     typedef struct {
         logic [31:0] next;
         logic we;
-    } clint_NumCores_2__mtime__mtime_high__MTIME_HIGH__in_t;
+    } clint__mtime__high__value__in_t;
 
     typedef struct {
-        clint_NumCores_2__mtime__mtime_high__MTIME_HIGH__in_t MTIME_HIGH;
-    } clint_NumCores_2__mtime__mtime_high__in_t;
+        clint__mtime__high__value__in_t value;
+    } clint__mtime__high__in_t;
 
     typedef struct {
-        clint_NumCores_2__mtime__mtime_low__in_t mtime_low;
-        clint_NumCores_2__mtime__mtime_high__in_t mtime_high;
-    } clint_NumCores_2__mtime__in_t;
+        clint__mtime__low__in_t low;
+        clint__mtime__high__in_t high;
+    } clint__mtime__in_t;
 
     typedef struct {
-        clint_NumCores_2__mtime__in_t mtime;
+        clint__mtime__in_t mtime;
     } clint__in_t;
 
     typedef struct {
         logic value;
-    } clint_NumCores_2__msip__P__out_t;
+    } clint__msip__pending__out_t;
 
     typedef struct {
-        clint_NumCores_2__msip__P__out_t P;
-    } clint_NumCores_2__msip__out_t;
-
-    typedef struct {
-        logic [31:0] value;
-    } clint_NumCores_2__mtimecmp__mtimecmp_low__MTIMECMP_LOW__out_t;
-
-    typedef struct {
-        clint_NumCores_2__mtimecmp__mtimecmp_low__MTIMECMP_LOW__out_t MTIMECMP_LOW;
-    } clint_NumCores_2__mtimecmp__mtimecmp_low__out_t;
+        clint__msip__pending__out_t pending;
+    } clint__msip__out_t;
 
     typedef struct {
         logic [31:0] value;
-    } clint_NumCores_2__mtimecmp__mtimecmp_high__MTIMECMP_HIGH__out_t;
+    } clint__mtimecmp__low__value__out_t;
 
     typedef struct {
-        clint_NumCores_2__mtimecmp__mtimecmp_high__MTIMECMP_HIGH__out_t MTIMECMP_HIGH;
-    } clint_NumCores_2__mtimecmp__mtimecmp_high__out_t;
-
-    typedef struct {
-        clint_NumCores_2__mtimecmp__mtimecmp_low__out_t mtimecmp_low;
-        clint_NumCores_2__mtimecmp__mtimecmp_high__out_t mtimecmp_high;
-    } clint_NumCores_2__mtimecmp__out_t;
+        clint__mtimecmp__low__value__out_t value;
+    } clint__mtimecmp__low__out_t;
 
     typedef struct {
         logic [31:0] value;
-    } clint_NumCores_2__mtime__mtime_low__MTIME_LOW__out_t;
+    } clint__mtimecmp__high__value__out_t;
 
     typedef struct {
-        clint_NumCores_2__mtime__mtime_low__MTIME_LOW__out_t MTIME_LOW;
-    } clint_NumCores_2__mtime__mtime_low__out_t;
+        clint__mtimecmp__high__value__out_t value;
+    } clint__mtimecmp__high__out_t;
+
+    typedef struct {
+        clint__mtimecmp__low__out_t low;
+        clint__mtimecmp__high__out_t high;
+    } clint__mtimecmp__out_t;
 
     typedef struct {
         logic [31:0] value;
-    } clint_NumCores_2__mtime__mtime_high__MTIME_HIGH__out_t;
+    } clint__mtime__low__value__out_t;
 
     typedef struct {
-        clint_NumCores_2__mtime__mtime_high__MTIME_HIGH__out_t MTIME_HIGH;
-    } clint_NumCores_2__mtime__mtime_high__out_t;
+        clint__mtime__low__value__out_t value;
+    } clint__mtime__low__out_t;
 
     typedef struct {
-        clint_NumCores_2__mtime__mtime_low__out_t mtime_low;
-        clint_NumCores_2__mtime__mtime_high__out_t mtime_high;
-    } clint_NumCores_2__mtime__out_t;
+        logic [31:0] value;
+    } clint__mtime__high__value__out_t;
 
     typedef struct {
-        clint_NumCores_2__msip__out_t msip[2];
-        clint_NumCores_2__mtimecmp__out_t mtimecmp[2];
-        clint_NumCores_2__mtime__out_t mtime;
+        clint__mtime__high__value__out_t value;
+    } clint__mtime__high__out_t;
+
+    typedef struct {
+        clint__mtime__low__out_t low;
+        clint__mtime__high__out_t high;
+    } clint__mtime__out_t;
+
+    typedef struct {
+        clint__msip__out_t msip[2];
+        clint__mtimecmp__out_t mtimecmp[2];
+        clint__mtime__out_t mtime;
     } clint__out_t;
 endpackage

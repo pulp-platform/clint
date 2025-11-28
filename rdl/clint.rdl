@@ -9,74 +9,61 @@
 `define CLINT_RDL
 
 addrmap clint #(
-    longint unsigned NumCores = 1 // Number of cores
+    longint unsigned NumCores = 2 // Number of cores
 ) {
     reg msip {
-        name = "MSIP";
         desc = "Machine Software Interrupt Pending";
         field {
-            name = "P";
             desc = "Machine Software Interrupt Pending";
             sw = rw;
             hw = r;
-        } P[0:0] = 0x0;
+        } pending[0:0] = 0x0;
         field {
-            name = "RSVD";
             desc = "Reserved";
             sw = r;
             hw = na;
-        } RSVD[31:1] = 0x0;
+        } rsvd[31:1] = 0x0;
     };
 
     regfile mtimecmp {
-        name = "MTIMECMP";
         desc = "Machine Timer Compare";
         reg {
-            name = "MTIMECMP_LOW";
             desc = "Lower 32 bits of Machine Timer Compare Value";
             field {
-                name = "MTIMECMP_LOW";
                 desc = "Timer Compare Value Low";
                 sw = rw;
                 hw = r;
-            } MTIMECMP_LOW[31:0] = 0x0;
-        } mtimecmp_low;
+            } value[31:0] = 0x0;
+        } low;
         reg {
-            name = "MTIMECMP_HIGH";
             desc = "Upper 32 bits of Machine Timer Compare Value";
             field {
-                name = "MTIMECMP_HIGH";
                 desc = "Timer Compare Value";
                 sw = rw;
                 hw = r;
-            } MTIMECMP_HIGH[31:0] = 0x0;
-        } mtimecmp_high;
+            } value[31:0] = 0x0;
+        } high;
     };
 
     regfile mtime {
-        name = "MTIME";
         desc = "Timer Register";
         default we = true;
         reg {
-            name = "MTIME_LOW";
             desc = "Lower 32 bits of Timer Register";
             field {
-                name = "MTIME_LOW";
                 desc = "Machine Time (Low)";
                 sw = rw;
                 hw = rw;
-            } MTIME_LOW[31:0] = 0x0;
-        } mtime_low;
+            } value[31:0] = 0x0;
+        } low;
         reg {
-            name = "MTIME_HIGH";
             desc = "Upper 32 bits of Timer Register";
             field {
-                name = "MTIME_HIGH";
                 desc = "Machine Time (High)";
                 sw = rw;
                 hw = rw;
-            } MTIME_HIGH[31:0] = 0x0;
-        } mtime_high;
+            } value[31:0] = 0x0;
+        } high;
     };
 
     msip msip[NumCores] @0x0;

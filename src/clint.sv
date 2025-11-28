@@ -34,14 +34,14 @@ module clint import clint_reg_pkg::*; #(
     clint_reg_pkg::clint__out_t reg2hw;
     clint_reg_pkg::clint__in_t hw2reg;
 
-    clint_reg_top i_clint_reg_top (
+    clint_reg i_clint_reg (
       .clk (clk_i),
       .arst_n (rst_ni),
       .s_apb_psel    (apb_req_i.psel),
       .s_apb_penable (apb_req_i.penable),
       .s_apb_pwrite  (apb_req_i.pwrite),
       .s_apb_pprot   (apb_req_i.pprot),
-      .s_apb_paddr   (apb_req_i.paddr[CLINT_REG_TOP_MIN_ADDR_WIDTH-1:0]),
+      .s_apb_paddr   (apb_req_i.paddr[CLINT_REG_MIN_ADDR_WIDTH-1:0]),
       .s_apb_pwdata  (apb_req_i.pwdata),
       .s_apb_pstrb   (apb_req_i.pstrb),
       .s_apb_pready  (apb_rsp_o.pready),
@@ -51,18 +51,15 @@ module clint import clint_reg_pkg::*; #(
       .hwif_in  (hw2reg) // Read
     );
 
-    assign mtime_q = {reg2hw.mtime.mtime_high.MTIME_HIGH.value,
-                      reg2hw.mtime.mtime_low.MTIME_LOW.value};
+    assign mtime_q = {reg2hw.mtime.high.value, reg2hw.mtime.low.value};
     for (genvar i = 0; i < NumCores; i++) begin : gen_mtimecmp
-        assign mtimecmp_q[i] = {reg2hw.mtimecmp[i].mtimecmp_high.MTIMECMP_HIGH.value,
-                                reg2hw.mtimecmp[i].mtimecmp_low.MTIMECMP_LOW.value};
-        assign ipi_o[i] = reg2hw.msip[i].P.value;
+        assign mtimecmp_q[i] = {reg2hw.mtimecmp[i].high.value, reg2hw.mtimecmp[i].low.value};
+        assign ipi_o[i] = reg2hw.msip[i].pending.value;
     end
 
-    assign {hw2reg.mtime.mtime_high.MTIME_HIGH.next,
-            hw2reg.mtime.mtime_low.MTIME_LOW.next} = mtime_q + 1;
-    assign hw2reg.mtime.mtime_low.MTIME_LOW.we = increase_timer;
-    assign hw2reg.mtime.mtime_high.MTIME_HIGH.we = increase_timer;
+    assign {hw2reg.mtime.high.value.next, hw2reg.mtime.low.value.next} = mtime_q + 1;
+    assign hw2reg.mtime.low.value.we = increase_timer;
+    assign hw2reg.mtime.high.value.we = increase_timer;
 
     // -----------------------------
     // IRQ Generation
@@ -143,4 +140,3 @@ module clint_sync #(
   assign serial_o = reg_q[STAGES-1];
 
 endmodule
-
