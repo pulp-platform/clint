@@ -11,25 +11,16 @@ clean:
 	rm -rf .bender
 	rm -f Bender.lock
 
-bender:
-	curl --proto '=https' --tlsv1.2 -sSf https://pulp-platform.github.io/bender/init | bash -s -- 0.28.2
-	touch bender
-
 # Generate peripheral RTL
 
 BENDER = ./bender
 CLINTROOT = .
-clint.mk: bender # Bender is needed by make fragment
+CLINTCORES ?= 2
 include clint.mk
 
 all: clint
+build:
+	./util/compile.sh
 
-# Checks
-
-CHECK_CLEAN = git status && test -z "$$(git status --porcelain)"
-
-check_generated:
-	$(MAKE) -B clint
-	$(CHECK_CLEAN)
-
-check: check_generated
+run:
+	./util/run_vsim.sh
