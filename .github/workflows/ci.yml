@@ -31,9 +31,9 @@ jobs:
         run: pip install -r requirements.txt
       - name: Check generated sources
         run: |
-          make clint CLINTCORES=2 && test -z "$(git status --porcelain)"
-          make clint CLINTCORES=4 && test -n "$(git status --porcelain)"
-          make clint CLINTCORES=2 && test -z "$(git status --porcelain)"
+          make src/clint_reg.sv CLINTCORES=2 && test -z "$(git status --porcelain)"
+          make src/clint_reg.sv CLINTCORES=4 && test -n "$(git status --porcelain)"
+          make src/clint_reg.sv CLINTCORES=2 && test -z "$(git status --porcelain)"
 
 
   check-verilog:
