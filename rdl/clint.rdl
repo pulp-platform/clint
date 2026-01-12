@@ -25,45 +25,37 @@ addrmap clint #(
         } rsvd[31:1] = 0x0;
     };
 
-    regfile mtimecmp {
+    reg mtimecmp {
         desc = "Machine Timer Compare";
-        reg {
-            desc = "Lower 32 bits of Machine Timer Compare Value";
-            field {
-                desc = "Timer Compare Value Low";
-                sw = rw;
-                hw = r;
-            } value[31:0] = 0x0;
-        } low;
-        reg {
-            desc = "Upper 32 bits of Machine Timer Compare Value";
-            field {
-                desc = "Timer Compare Value";
-                sw = rw;
-                hw = r;
-            } value[31:0] = 0x0;
-        } high;
+        regwidth = 64;
+        accesswidth = 32;
+        field {
+            desc = "Timer Compare Value Low";
+            sw = rw;
+            hw = r;
+        } low[31:0] = 0x0;
+        field {
+            desc = "Timer Compare Value High";
+            sw = rw;
+            hw = r;
+        } high[63:32] = 0x0;
     };
 
-    regfile mtime {
+    reg mtime {
         desc = "Timer Register";
+        regwidth = 64;
+        accesswidth = 32;
         default we = true;
-        reg {
-            desc = "Lower 32 bits of Timer Register";
-            field {
-                desc = "Machine Time (Low)";
-                sw = rw;
-                hw = rw;
-            } value[31:0] = 0x0;
-        } low;
-        reg {
-            desc = "Upper 32 bits of Timer Register";
-            field {
-                desc = "Machine Time (High)";
-                sw = rw;
-                hw = rw;
-            } value[31:0] = 0x0;
-        } high;
+        field {
+            desc = "Machine Time (Low)";
+            sw = rw;
+            hw = rw;
+        } low[31:0] = 0x0;
+        field {
+            desc = "Machine Time (High)";
+            sw = rw;
+            hw = rw;
+        } high[63:32] = 0x0;
     };
 
     msip msip[NumCores] @0x0;

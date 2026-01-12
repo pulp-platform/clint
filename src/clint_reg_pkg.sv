@@ -15,19 +15,11 @@ package clint_reg_pkg;
     typedef struct {
         logic [31:0] next;
         logic we;
-    } clint__mtime__low__value__in_t;
-
-    typedef struct {
-        clint__mtime__low__value__in_t value;
     } clint__mtime__low__in_t;
 
     typedef struct {
         logic [31:0] next;
         logic we;
-    } clint__mtime__high__value__in_t;
-
-    typedef struct {
-        clint__mtime__high__value__in_t value;
     } clint__mtime__high__in_t;
 
     typedef struct {
@@ -49,18 +41,10 @@ package clint_reg_pkg;
 
     typedef struct {
         logic [31:0] value;
-    } clint__mtimecmp__low__value__out_t;
-
-    typedef struct {
-        clint__mtimecmp__low__value__out_t value;
     } clint__mtimecmp__low__out_t;
 
     typedef struct {
         logic [31:0] value;
-    } clint__mtimecmp__high__value__out_t;
-
-    typedef struct {
-        clint__mtimecmp__high__value__out_t value;
     } clint__mtimecmp__high__out_t;
 
     typedef struct {
@@ -70,18 +54,10 @@ package clint_reg_pkg;
 
     typedef struct {
         logic [31:0] value;
-    } clint__mtime__low__value__out_t;
-
-    typedef struct {
-        clint__mtime__low__value__out_t value;
     } clint__mtime__low__out_t;
 
     typedef struct {
         logic [31:0] value;
-    } clint__mtime__high__value__out_t;
-
-    typedef struct {
-        clint__mtime__high__value__out_t value;
     } clint__mtime__high__out_t;
 
     typedef struct {

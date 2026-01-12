@@ -92,14 +92,8 @@ module clint_reg (
     //--------------------------------------------------------------------------
     typedef struct {
         logic msip[2];
-        struct {
-            logic low;
-            logic high;
-        } mtimecmp[2];
-        struct {
-            logic low;
-            logic high;
-        } mtime;
+        logic [1:0] mtimecmp[2];
+        logic [1:0] mtime;
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
     logic decoded_err;
@@ -117,11 +111,11 @@ module clint_reg (
             decoded_reg_strb.msip[i0] = cpuif_req_masked & (cpuif_addr == 16'h0 + (16)'(i0) * 16'h4);
         end
         for(int i0=0; i0<2; i0++) begin
-            decoded_reg_strb.mtimecmp[i0].low = cpuif_req_masked & (cpuif_addr == 16'h4000 + (16)'(i0) * 16'h8);
-            decoded_reg_strb.mtimecmp[i0].high = cpuif_req_masked & (cpuif_addr == 16'h4004 + (16)'(i0) * 16'h8);
+            decoded_reg_strb.mtimecmp[i0][0] = cpuif_req_masked & (cpuif_addr == 16'h4000 + (16)'(i0) * 16'h8);
+            decoded_reg_strb.mtimecmp[i0][1] = cpuif_req_masked & (cpuif_addr == 16'h4004 + (16)'(i0) * 16'h8);
         end
-        decoded_reg_strb.mtime.low = cpuif_req_masked & (cpuif_addr == 16'hbff8);
-        decoded_reg_strb.mtime.high = cpuif_req_masked & (cpuif_addr == 16'hbffc);
+        decoded_reg_strb.mtime[0] = cpuif_req_masked & (cpuif_addr == 16'hbff8);
+        decoded_reg_strb.mtime[1] = cpuif_req_masked & (cpuif_addr == 16'hbffc);
         decoded_err = (~is_valid_addr | is_invalid_rw) & decoded_req;
     end
 
@@ -143,30 +137,22 @@ module clint_reg (
         } msip[2];
         struct {
             struct {
-                struct {
-                    logic [31:0] next;
-                    logic load_next;
-                } value;
+                logic [31:0] next;
+                logic load_next;
             } low;
             struct {
-                struct {
-                    logic [31:0] next;
-                    logic load_next;
-                } value;
+                logic [31:0] next;
+                logic load_next;
             } high;
         } mtimecmp[2];
         struct {
             struct {
-                struct {
-                    logic [31:0] next;
-                    logic load_next;
-                } value;
+                logic [31:0] next;
+                logic load_next;
             } low;
             struct {
-                struct {
-                    logic [31:0] next;
-                    logic load_next;
-                } value;
+                logic [31:0] next;
+                logic load_next;
             } high;
         } mtime;
     } field_combo_t;
@@ -180,26 +166,18 @@ module clint_reg (
         } msip[2];
         struct {
             struct {
-                struct {
-                    logic [31:0] value;
-                } value;
+                logic [31:0] value;
             } low;
             struct {
-                struct {
-                    logic [31:0] value;
-                } value;
+                logic [31:0] value;
             } high;
         } mtimecmp[2];
         struct {
             struct {
-                struct {
-                    logic [31:0] value;
-                } value;
+                logic [31:0] value;
             } low;
             struct {
-                struct {
-                    logic [31:0] value;
-                } value;
+                logic [31:0] value;
             } high;
         } mtime;
     } field_storage_t;
@@ -231,105 +209,105 @@ module clint_reg (
         assign hwif_out.msip[i0].pending.value = field_storage.msip[i0].pending.value;
     end
     for(genvar i0=0; i0<2; i0++) begin
-        // Field: clint.mtimecmp[].low.value
+        // Field: clint.mtimecmp[].low
         always_comb begin
             automatic logic [31:0] next_c;
             automatic logic load_next_c;
-            next_c = field_storage.mtimecmp[i0].low.value.value;
+            next_c = field_storage.mtimecmp[i0].low.value;
             load_next_c = '0;
-            if(decoded_reg_strb.mtimecmp[i0].low && decoded_req_is_wr) begin // SW write
-                next_c = (field_storage.mtimecmp[i0].low.value.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            if(decoded_reg_strb.mtimecmp[i0][0] && decoded_req_is_wr) begin // SW write
+                next_c = (field_storage.mtimecmp[i0].low.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
             end
-            field_combo.mtimecmp[i0].low.value.next = next_c;
-            field_combo.mtimecmp[i0].low.value.load_next = load_next_c;
+            field_combo.mtimecmp[i0].low.next = next_c;
+            field_combo.mtimecmp[i0].low.load_next = load_next_c;
         end
         always_ff @(posedge clk or negedge arst_n) begin
             if(~arst_n) begin
-                field_storage.mtimecmp[i0].low.value.value <= 32'h0;
+                field_storage.mtimecmp[i0].low.value <= 32'h0;
             end else begin
-                if(field_combo.mtimecmp[i0].low.value.load_next) begin
-                    field_storage.mtimecmp[i0].low.value.value <= field_combo.mtimecmp[i0].low.value.next;
+                if(field_combo.mtimecmp[i0].low.load_next) begin
+                    field_storage.mtimecmp[i0].low.value <= field_combo.mtimecmp[i0].low.next;
                 end
             end
         end
-        assign hwif_out.mtimecmp[i0].low.value.value = field_storage.mtimecmp[i0].low.value.value;
-        // Field: clint.mtimecmp[].high.value
+        assign hwif_out.mtimecmp[i0].low.value = field_storage.mtimecmp[i0].low.value;
+        // Field: clint.mtimecmp[].high
         always_comb begin
             automatic logic [31:0] next_c;
             automatic logic load_next_c;
-            next_c = field_storage.mtimecmp[i0].high.value.value;
+            next_c = field_storage.mtimecmp[i0].high.value;
             load_next_c = '0;
-            if(decoded_reg_strb.mtimecmp[i0].high && decoded_req_is_wr) begin // SW write
-                next_c = (field_storage.mtimecmp[i0].high.value.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+            if(decoded_reg_strb.mtimecmp[i0][1] && decoded_req_is_wr) begin // SW write
+                next_c = (field_storage.mtimecmp[i0].high.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
                 load_next_c = '1;
             end
-            field_combo.mtimecmp[i0].high.value.next = next_c;
-            field_combo.mtimecmp[i0].high.value.load_next = load_next_c;
+            field_combo.mtimecmp[i0].high.next = next_c;
+            field_combo.mtimecmp[i0].high.load_next = load_next_c;
         end
         always_ff @(posedge clk or negedge arst_n) begin
             if(~arst_n) begin
-                field_storage.mtimecmp[i0].high.value.value <= 32'h0;
+                field_storage.mtimecmp[i0].high.value <= 32'h0;
             end else begin
-                if(field_combo.mtimecmp[i0].high.value.load_next) begin
-                    field_storage.mtimecmp[i0].high.value.value <= field_combo.mtimecmp[i0].high.value.next;
+                if(field_combo.mtimecmp[i0].high.load_next) begin
+                    field_storage.mtimecmp[i0].high.value <= field_combo.mtimecmp[i0].high.next;
                 end
             end
         end
-        assign hwif_out.mtimecmp[i0].high.value.value = field_storage.mtimecmp[i0].high.value.value;
+        assign hwif_out.mtimecmp[i0].high.value = field_storage.mtimecmp[i0].high.value;
     end
-    // Field: clint.mtime.low.value
+    // Field: clint.mtime.low
     always_comb begin
         automatic logic [31:0] next_c;
         automatic logic load_next_c;
-        next_c = field_storage.mtime.low.value.value;
+        next_c = field_storage.mtime.low.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mtime.low && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.mtime.low.value.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+        if(decoded_reg_strb.mtime[0] && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.mtime.low.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
             load_next_c = '1;
-        end else if(hwif_in.mtime.low.value.we) begin // HW Write - we
-            next_c = hwif_in.mtime.low.value.next;
+        end else if(hwif_in.mtime.low.we) begin // HW Write - we
+            next_c = hwif_in.mtime.low.next;
             load_next_c = '1;
         end
-        field_combo.mtime.low.value.next = next_c;
-        field_combo.mtime.low.value.load_next = load_next_c;
+        field_combo.mtime.low.next = next_c;
+        field_combo.mtime.low.load_next = load_next_c;
     end
     always_ff @(posedge clk or negedge arst_n) begin
         if(~arst_n) begin
-            field_storage.mtime.low.value.value <= 32'h0;
+            field_storage.mtime.low.value <= 32'h0;
         end else begin
-            if(field_combo.mtime.low.value.load_next) begin
-                field_storage.mtime.low.value.value <= field_combo.mtime.low.value.next;
+            if(field_combo.mtime.low.load_next) begin
+                field_storage.mtime.low.value <= field_combo.mtime.low.next;
             end
         end
     end
-    assign hwif_out.mtime.low.value.value = field_storage.mtime.low.value.value;
-    // Field: clint.mtime.high.value
+    assign hwif_out.mtime.low.value = field_storage.mtime.low.value;
+    // Field: clint.mtime.high
     always_comb begin
         automatic logic [31:0] next_c;
         automatic logic load_next_c;
-        next_c = field_storage.mtime.high.value.value;
+        next_c = field_storage.mtime.high.value;
         load_next_c = '0;
-        if(decoded_reg_strb.mtime.high && decoded_req_is_wr) begin // SW write
-            next_c = (field_storage.mtime.high.value.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
+        if(decoded_reg_strb.mtime[1] && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.mtime.high.value & ~decoded_wr_biten[31:0]) | (decoded_wr_data[31:0] & decoded_wr_biten[31:0]);
             load_next_c = '1;
-        end else if(hwif_in.mtime.high.value.we) begin // HW Write - we
-            next_c = hwif_in.mtime.high.value.next;
+        end else if(hwif_in.mtime.high.we) begin // HW Write - we
+            next_c = hwif_in.mtime.high.next;
             load_next_c = '1;
         end
-        field_combo.mtime.high.value.next = next_c;
-        field_combo.mtime.high.value.load_next = load_next_c;
+        field_combo.mtime.high.next = next_c;
+        field_combo.mtime.high.load_next = load_next_c;
     end
     always_ff @(posedge clk or negedge arst_n) begin
         if(~arst_n) begin
-            field_storage.mtime.high.value.value <= 32'h0;
+            field_storage.mtime.high.value <= 32'h0;
         end else begin
-            if(field_combo.mtime.high.value.load_next) begin
-                field_storage.mtime.high.value.value <= field_combo.mtime.high.value.next;
+            if(field_combo.mtime.high.load_next) begin
+                field_storage.mtime.high.value <= field_combo.mtime.high.next;
             end
         end
     end
-    assign hwif_out.mtime.high.value.value = field_storage.mtime.high.value.value;
+    assign hwif_out.mtime.high.value = field_storage.mtime.high.value;
 
     //--------------------------------------------------------------------------
     // Write response
@@ -353,11 +331,11 @@ module clint_reg (
         assign readback_array[i0 * 1 + 0][31:1] = (decoded_reg_strb.msip[i0] && !decoded_req_is_wr) ? 31'h0 : '0;
     end
     for(genvar i0=0; i0<2; i0++) begin
-        assign readback_array[i0 * 2 + 2][31:0] = (decoded_reg_strb.mtimecmp[i0].low && !decoded_req_is_wr) ? field_storage.mtimecmp[i0].low.value.value : '0;
-        assign readback_array[i0 * 2 + 3][31:0] = (decoded_reg_strb.mtimecmp[i0].high && !decoded_req_is_wr) ? field_storage.mtimecmp[i0].high.value.value : '0;
+        assign readback_array[i0 * 2 + 2][31:0] = (decoded_reg_strb.mtimecmp[i0][0] && !decoded_req_is_wr) ? field_storage.mtimecmp[i0].low.value : '0;
+        assign readback_array[i0 * 2 + 3][31:0] = (decoded_reg_strb.mtimecmp[i0][1] && !decoded_req_is_wr) ? field_storage.mtimecmp[i0].high.value : '0;
     end
-    assign readback_array[6][31:0] = (decoded_reg_strb.mtime.low && !decoded_req_is_wr) ? field_storage.mtime.low.value.value : '0;
-    assign readback_array[7][31:0] = (decoded_reg_strb.mtime.high && !decoded_req_is_wr) ? field_storage.mtime.high.value.value : '0;
+    assign readback_array[6][31:0] = (decoded_reg_strb.mtime[0] && !decoded_req_is_wr) ? field_storage.mtime.low.value : '0;
+    assign readback_array[7][31:0] = (decoded_reg_strb.mtime[1] && !decoded_req_is_wr) ? field_storage.mtime.high.value : '0;
 
     // Reduce the array
     always_comb begin

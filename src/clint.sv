@@ -51,15 +51,15 @@ module clint import clint_reg_pkg::*; #(
       .hwif_in  (hw2reg) // Read
     );
 
-    assign mtime_q = {reg2hw.mtime.high.value.value, reg2hw.mtime.low.value.value};
+    assign mtime_q = {reg2hw.mtime.high.value, reg2hw.mtime.low.value};
     for (genvar i = 0; i < NumCores; i++) begin : gen_mtimecmp
-        assign mtimecmp_q[i] = {reg2hw.mtimecmp[i].high.value.value, reg2hw.mtimecmp[i].low.value.value};
+        assign mtimecmp_q[i] = {reg2hw.mtimecmp[i].high.value, reg2hw.mtimecmp[i].low.value};
         assign ipi_o[i] = reg2hw.msip[i].pending.value;
     end
 
-    assign {hw2reg.mtime.high.value.next, hw2reg.mtime.low.value.next} = mtime_q + 1;
-    assign hw2reg.mtime.low.value.we = increase_timer;
-    assign hw2reg.mtime.high.value.we = increase_timer;
+    assign {hw2reg.mtime.high.next, hw2reg.mtime.low.next} = mtime_q + 1;
+    assign hw2reg.mtime.low.we = increase_timer;
+    assign hw2reg.mtime.high.we = increase_timer;
 
     // -----------------------------
     // IRQ Generation
