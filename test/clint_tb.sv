@@ -16,6 +16,7 @@ module clint_tb;
 
   logic clk, rst_n, rtc;
   logic [1:0] timer_irq, ipi;
+  logic rtc_en;
 
   // ----------------
   // Clock generation
@@ -34,10 +35,16 @@ module clint_tb;
   end
 
   initial begin
+    rtc_en = 1'b1;
     rtc = 1'b0;
     forever begin
-      #(RTCClkPeriod/2) rtc = 0;
-      #(RTCClkPeriod/2) rtc = 1;
+      if (rtc_en) begin
+        #(RTCClkPeriod/2) rtc = 0;
+        #(RTCClkPeriod/2) rtc = 1;
+      end else begin
+        rtc = 0;
+        #(RTCClkPeriod);
+      end
     end
   end
 
@@ -74,19 +81,86 @@ module clint_tb;
 
   initial begin
     automatic logic error;
+    automatic logic [31:0] rdata;
     driver.reset_master();
     @(posedge rst_n);
+
+    // ---------------------------------------------------------
+    // 1. MSIP Test
+    // ---------------------------------------------------------
     driver.write(MSIPBase, 1, 1, error);
     @(posedge clk);
-    assert(ipi[0] == 1);
-    driver.write(MTIMECMPBase, 32'hffff, 4'hf, error);
+    assert(ipi[0] == 1) else $error("MSIP[0] assertion failed");
+
+    // ---------------------------------------------------------
+    // 2. MTIMECMP 64-bit Access Test
+    // ---------------------------------------------------------
+    // Write Low 32-bits
+    driver.write(MTIMECMPBase, 32'hffff_ffff, 4'hf, error);
+    // Write High 32-bits
+    driver.write(MTIMECMPBase + 4, 32'h0000_0001, 4'hf, error);
+
+    // Read back to verify
+    driver.read(MTIMECMPBase, rdata, error);
+    assert(rdata == 32'hffff_ffff) else $error("MTIMECMP Low readback failed: expected ffffffff, got %h", rdata);
+    driver.read(MTIMECMPBase + 4, rdata, error);
+    assert(rdata == 32'h0000_0001) else $error("MTIMECMP High readback failed: expected 1, got %h", rdata);
+
+    // ---------------------------------------------------------
+    // 3. MTIME 64-bit Access Test & IRQ Logic
+    // ---------------------------------------------------------
+    // Disable RTC to check read/write without increment
+    rtc_en = 0;
+    #100ns;
+
+    // Set mtime to 0x1_FFFFFFFE (just below mtimecmp)
+    driver.write(MTIMEBase, 32'hffff_fffe, 4'hf, error);
+    driver.write(MTIMEBase + 4, 32'h0000_0001, 4'hf, error);
+
+    // Read back mtime
+    driver.read(MTIMEBase, rdata, error);
+    assert(rdata == 32'hffff_fffe) else $error("MTIME Low readback failed");
+    driver.read(MTIMEBase + 4, rdata, error);
+    assert(rdata == 32'h0000_0001) else $error("MTIME High readback failed");
+
+    // Check IRQ: mtime (1_fffffffe) < mtimecmp (1_ffffffff) -> irq should be 0
     @(posedge clk);
-    assert(timer_irq[0] == 0);
-    assert(timer_irq[1] == 1);
+    assert(timer_irq[0] == 0) else $error("Timer IRQ[0] should be 0 (mtime < mtimecmp)");
+
+    // Enable RTC and Advance mtime to equal mtimecmp
+    rtc_en = 1;
     driver.write(MTIMEBase, 32'hffff_ffff, 4'hf, error);
+    // mtime (1_ffffffff) >= mtimecmp (1_ffffffff) -> irq should be 1
+    // We wait enough time for potential sync/update
+    repeat(10) @(posedge clk);
+    assert(timer_irq[0] == 1) else $error("Timer IRQ[0] should be 1 (mtime == mtimecmp)");
+
+    // ---------------------------------------------------------
+    // 4. MTIMECMP[1] Test (High core)
+    // ---------------------------------------------------------
+    // mtimecmp[1] base is 0x4000 + 0x8 = 0x4008
+    // Set mtimecmp[1] to 0x2_00000000
+    driver.write(MTIMECMPBase + 8, 32'h0000_0000, 4'hf, error);
+    driver.write(MTIMECMPBase + 12, 32'h0000_0002, 4'hf, error);
+
+    // Disable RTC to ensure stability
+    rtc_en = 0;
+    #100ns;
+    
+    // Set mtime to 0x0
+    driver.write(MTIMEBase, 0, 4'hf, error);
+    driver.write(MTIMEBase + 4, 0, 4'hf, error);
+
+    // mtime is 0. 0 < 2_00000000. irq[1] should be 0.
     @(posedge clk);
-    assert(timer_irq[0] == 1);
-    assert(timer_irq[1] == 1);
+    assert(timer_irq[1] == 0) else $error("Timer IRQ[1] should be 0 (mtime < mtimecmp[1])");
+
+    // Advance mtime high to 2
+    driver.write(MTIMEBase + 4, 32'h0000_0002, 4'hf, error); // mtime = 0x2_00000000
+    // mtime (2_00000000) >= mtimecmp[1] (2_00000000). irq[1] should be 1.
+    @(posedge clk);
+    assert(timer_irq[1] == 1) else $error("Timer IRQ[1] should be 1 (mtime >= mtimecmp[1])");
+
     #3000ns;
     $finish();
   end
