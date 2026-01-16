@@ -75,9 +75,10 @@ module clint_tb;
     .ipi_o (ipi)
   );
 
-  localparam logic [31:0] MSIPBase = 32'h0;
-  localparam logic [31:0] MTIMECMPBase = 32'h4000;
-  localparam logic [31:0] MTIMEBase = 32'hbff8;
+  `include "clint_reg_defs.svh"
+  localparam logic [31:0] MSIPBase = 32'(`CLINT_MSIP_BASE_ADDR(0));
+  localparam logic [31:0] MTIMECMPBase = 32'(`CLINT_MTIMECMP_BASE_ADDR(0));
+  localparam logic [31:0] MTIMEBase = 32'(`CLINT_MTIME_BASE_ADDR);
 
   initial begin
     automatic logic error;
@@ -140,13 +141,13 @@ module clint_tb;
     // ---------------------------------------------------------
     // mtimecmp[1] base is 0x4000 + 0x8 = 0x4008
     // Set mtimecmp[1] to 0x2_00000000
-    driver.write(MTIMECMPBase + 8, 32'h0000_0000, 4'hf, error);
-    driver.write(MTIMECMPBase + 12, 32'h0000_0002, 4'hf, error);
+    driver.write(32'(`CLINT_MTIMECMP_BASE_ADDR(1)), 32'h0000_0000, 4'hf, error);
+    driver.write(32'(`CLINT_MTIMECMP_BASE_ADDR(1)) + 4, 32'h0000_0002, 4'hf, error);
 
     // Disable RTC to ensure stability
     rtc_en = 0;
     #100ns;
-    
+
     // Set mtime to 0x0
     driver.write(MTIMEBase, 0, 4'hf, error);
     driver.write(MTIMEBase + 4, 0, 4'hf, error);
@@ -156,10 +157,10 @@ module clint_tb;
     assert(timer_irq[1] == 0) else $error("Timer IRQ[1] should be 0 (mtime < mtimecmp[1])");
 
     // Advance mtime high to 2
-    driver.write(MTIMEBase + 4, 32'h0000_0002, 4'hf, error); // mtime = 0x2_00000000
-    // mtime (2_00000000) >= mtimecmp[1] (2_00000000). irq[1] should be 1.
+    driver.write(MTIMEBase + 4, 32'h0000_0002, 4'hf, error); // mtime = 0x2_ffffffff
+    // mtime (2_ffffffff) >= mtimecmp[1] (2_00000000). irq[1] should be 1.
     @(posedge clk);
-    assert(timer_irq[1] == 1) else $error("Timer IRQ[1] should be 1 (mtime >= mtimecmp[1])");
+    assert(timer_irq[1] == 1) else $error("Timer IRQ[1] should be 1 (mtime > mtimecmp[1])");
 
     #3000ns;
     $finish();

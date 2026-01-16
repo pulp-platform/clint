@@ -13,12 +13,16 @@ clean:
 
 # Generate peripheral RTL
 
-BENDER = ./bender
+BENDER ?= bender
+PEAKRDL ?= uv run peakrdl
 CLINTROOT = .
 CLINTCORES ?= 2
 include clint.mk
 
-all: clint
+$(CLINTROOT)/test/clint_reg_defs.svh: $(CLINTROOT)/rdl/clint.rdl $(CLINTROOT)/.generated
+	$(PEAKRDL) raw-header $< -o $@ -P NumCores=$(CLINTCORES) --format svh
+
+all: clint $(CLINTROOT)/test/clint_reg_defs.svh
 build:
 	./util/compile.sh
 

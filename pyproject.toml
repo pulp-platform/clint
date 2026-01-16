@@ -1,0 +1,14 @@
+[project]
+name = "clint"
+version = "0.1.0"
+description = "RISC-V Core Local Interrupt Controller (CLINT)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "peakrdl>=1.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "peakrdl-rawheader>=0.2.2",
+]
