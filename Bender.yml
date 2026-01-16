@@ -6,7 +6,7 @@ package:
   authors: [Florian Zaruba <zarubaf@iis.ee.ethz.ch>]
 
 dependencies:
-  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.25.0 }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.39.0 }
   apb: { git: "https://github.com/pulp-platform/apb.git", version: 0.2.4 }
 
 sources:

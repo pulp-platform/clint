@@ -1,13 +1,10 @@
+# Simulation
 compile.tcl
 transcript
 *.log
-*.lock
 modelsim.ini
 work
-Bender.lock
 *wlf*
 
 # Bender
 .bender
-bender
-bender.lock
