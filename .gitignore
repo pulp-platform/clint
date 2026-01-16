@@ -5,6 +5,7 @@ transcript
 modelsim.ini
 work
 *wlf*
+scripts/compile.tcl
 
 # Bender
 .bender
