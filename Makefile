@@ -21,6 +21,7 @@ include clint.mk
 
 $(CLINTROOT)/test/clint_reg_defs.svh: $(CLINTROOT)/rdl/clint.rdl $(CLINTROOT)/.generated
 	$(PEAKRDL) raw-header $< -o $@ -P NumCores=$(CLINTCORES) --format svh
+	@sed -i '1i// Copyright 2025 ETH Zurich and University of Bologna.\n// Licensed under the Apache License, Version 2.0, see LICENSE for details.\n// SPDX-License-Identifier: Apache-2.0\n' $@
 
 all: clint $(CLINTROOT)/test/clint_reg_defs.svh
 build:
