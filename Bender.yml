@@ -19,5 +19,7 @@ sources:
 - src/clint.sv
 
 - target: test
+  include_dirs:
+    - test
   files:
   - test/clint_tb.sv
