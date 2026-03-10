@@ -3,7 +3,7 @@ compile.tcl
 transcript
 *.log
 modelsim.ini
-work
+work*
 *wlf*
 scripts/compile.tcl
 
