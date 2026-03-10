@@ -31,6 +31,21 @@ jobs:
           make src/clint_reg.sv CLINTCORES=4 && test -n "$(git status --porcelain)"
           make src/clint_reg.sv CLINTCORES=2 && test -z "$(git status --porcelain)"
 
+  verilator-sim:
+    name: Run Verilator simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bender install
+        uses: pulp-platform/pulp-actions/bender-install@v2.4.4
+        with:
+          version: 0.31.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install Verilator
+        uses: veryl-lang/setup-verilator@v1
+      - name: Run Verilator simulation
+        run: make vlt-run
 
   check-verilog:
     name: Check Verilog sources
