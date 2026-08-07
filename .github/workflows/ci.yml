@@ -18,13 +18,13 @@ jobs:
     name: Check generated sources
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: bender install
-        uses: pulp-platform/pulp-actions/bender-install@v2.5.0
+        uses: pulp-platform/pulp-actions/bender-install@v2.5.1
         with:
           version: 0.31.0
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@v9.0.0
       - name: Check generated sources
         run: |
           make src/clint_reg.sv CLINT_CORES=2 && test -z "$(git status --porcelain)"
@@ -35,13 +35,13 @@ jobs:
     name: Run Verilator simulation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - name: bender install
-        uses: pulp-platform/pulp-actions/bender-install@v2.5.0
+        uses: pulp-platform/pulp-actions/bender-install@v2.5.1
         with:
-          version: 0.31.0
+          version: 0.32.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@v9.0.0
       - name: Install Verilator
         uses: veryl-lang/setup-verilator@v1
       - name: Run Verilator simulation
@@ -51,7 +51,7 @@ jobs:
     name: Check Verilog sources
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
     - name: Run Verible
       uses: chipsalliance/verible-linter-action@main
       with:
@@ -63,5 +63,5 @@ jobs:
   reuse:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: fsfe/reuse-action@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: fsfe/reuse-action@v6.0.0
