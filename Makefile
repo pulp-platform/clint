@@ -7,29 +7,58 @@
 
 all:
 
-clean:
-	rm -rf .bender
-	rm -f Bender.lock
-
-bender:
-	curl --proto '=https' --tlsv1.2 -sSf https://pulp-platform.github.io/bender/init | bash -s -- 0.26.0
-	touch bender
-
 # Generate peripheral RTL
 
-BENDER = ./bender
-CLINTROOT = .
-clint.mk: bender # Bender is needed by make fragment
+BENDER ?= bender
+PEAKRDL ?= uv run peakrdl
+VSIM ?= vsim
+VLIB ?= vlib
+VMAP ?= vmap
+OSEDA ?=
+TB_TOP ?= clint_tb
+TB_HDR ?= $(CLINT_ROOT)/test/clint_reg_defs.svh
+VSIM_SCRIPT ?= scripts/compile.tcl
+VSIM_WORKLIB ?= work-vsim
+VSIM_VLOG_ARGS ?= -work $(VSIM_WORKLIB)
+VLT ?= $(OSEDA) verilator
+VLT_WORKDIR ?= work-vlt
+VLT_BIN ?= $(VLT_WORKDIR)/Vclint_tb
+
+CLINT_ROOT = .
+CLINT_CORES ?= 2
 include clint.mk
 
-all: clint
+$(TB_HDR): $(CLINT_ROOT)/rdl/clint.rdl $(CLINT_ROOT)/.generated
+	$(PEAKRDL) raw-header $< -o $@ -P NumCores=$(CLINT_CORES) --format svh
+	@sed -i '1i// Copyright 2025 ETH Zurich and University of Bologna.\n// Licensed under the Apache License, Version 2.0, see LICENSE for details.\n// SPDX-License-Identifier: Apache-2.0\n' $@
 
-# Checks
+all: clint $(TB_HDR)
 
-CHECK_CLEAN = git status && test -z "$$(git status --porcelain)"
+$(VSIM_SCRIPT): Bender.lock Bender.yml
+	mkdir -p scripts
+	$(BENDER) script vsim -t tb --vlog-args="$(VSIM_VLOG_ARGS)" > $@
 
-check_generated:
-	$(MAKE) -B clint
-	$(CHECK_CLEAN)
+build: $(CLINT_RTL) $(TB_HDR) $(VSIM_SCRIPT)
+	$(VLIB) $(VSIM_WORKLIB)
+	$(VMAP) $(VSIM_WORKLIB) $(VSIM_WORKLIB)
+	$(VSIM) -c -do "exit -code [source $(VSIM_SCRIPT)]"
 
-check: check_generated
+run: build
+	$(VSIM) -work $(VSIM_WORKLIB) -c -voptargs=+acc $(TB_TOP) -do "log -r /*; run -all" | tee vsim.log 2>&1
+	@grep "Errors: 0," vsim.log >/dev/null || (echo "Simulation failed"; exit 1)
+
+vlt-build: $(CLINT_RTL) $(TB_HDR)
+	$(VLT) $(shell $(BENDER) script verilator -t tb -t simulation) \
+	--timescale 1ns/1ps -Wno-fatal -Mdir $(VLT_WORKDIR) \
+	--binary --top-module $(TB_TOP)
+
+vlt-run: vlt-build
+	$(OSEDA) ./$(VLT_BIN)
+
+clean:
+	rm -rf .bender
+	rm -rf $(TB_HDR)
+	rm -rf $(VSIM_WORKLIB)
+	rm -rf $(VLT_WORKDIR)
+	rm -f scripts/compile.tcl
+	rm -f vsim.log

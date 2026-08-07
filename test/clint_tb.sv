@@ -4,18 +4,19 @@
 //
 // Author: Florian Zaruba, ETH Zurich
 
-`include "register_interface/assign.svh"
-`include "register_interface/typedef.svh"
+`include "apb/assign.svh"
+`include "apb/typedef.svh"
 
 module clint_tb;
 
   localparam time ClkPeriod = 10ns;
   localparam time RTCClkPeriod = 30ns;
 
-  `REG_BUS_TYPEDEF_ALL(dut, logic [31:0], logic [31:0], logic [3:0])
+  `APB_TYPEDEF_ALL(dut, logic [31:0], logic [31:0], logic [3:0])
 
   logic clk, rst_n, rtc;
   logic [1:0] timer_irq, ipi;
+  logic rtc_en;
 
   // ----------------
   // Clock generation
@@ -34,59 +35,133 @@ module clint_tb;
   end
 
   initial begin
+    rtc_en = 1'b1;
     rtc = 1'b0;
     forever begin
-      #(RTCClkPeriod/2) rtc = 0;
-      #(RTCClkPeriod/2) rtc = 1;
+      if (rtc_en) begin
+        #(RTCClkPeriod/2) rtc = 0;
+        #(RTCClkPeriod/2) rtc = 1;
+      end else begin
+        rtc = 0;
+        #(RTCClkPeriod);
+      end
     end
   end
 
-  REG_BUS #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) reg_dut(clk);
+  APB_DV #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_dut(clk);
   dut_req_t dut_req;
-  dut_rsp_t dut_rsp;
+  dut_resp_t dut_rsp;
 
-  `REG_BUS_ASSIGN_TO_REQ(dut_req, reg_dut)
-  `REG_BUS_ASSIGN_FROM_RSP(reg_dut, dut_rsp)
+  `APB_ASSIGN_TO_REQ(dut_req, apb_dut)
+  `APB_ASSIGN_FROM_RESP(apb_dut, dut_rsp)
 
-  typedef reg_test::reg_driver #(
-    .AW (32), .DW (32), .TA (ClkPeriod*0.2), .TT (ClkPeriod*0.8)
-  ) reg_driver_t;
+  typedef apb_test::apb_driver #(
+    .ADDR_WIDTH (32), .DATA_WIDTH (32), .TA (ClkPeriod*0.2), .TT (ClkPeriod*0.8)
+  ) apb_driver_t;
 
-  reg_driver_t driver = new (reg_dut);
+  apb_driver_t driver = new (apb_dut);
 
   clint #(
-    .reg_req_t (dut_req_t),
-    .reg_rsp_t (dut_rsp_t)
+    .apb_req_t (dut_req_t),
+    .apb_rsp_t (dut_resp_t)
   ) dut (
     .clk_i (clk),
     .rst_ni (rst_n),
     .testmode_i (1'b0),
-    .reg_req_i (dut_req),
-    .reg_rsp_o (dut_rsp),
+    .apb_req_i (dut_req),
+    .apb_rsp_o (dut_rsp),
     .rtc_i (rtc),
     .timer_irq_o (timer_irq),
     .ipi_o (ipi)
   );
 
-  localparam logic [31:0] MSIPBase = 32'h0;
-  localparam logic [31:0] MTIMECMPBase = 32'h4000;
-  localparam logic [31:0] MTIMEBase = 32'hbff8;
+  `include "clint_reg_defs.svh"
+  localparam logic [31:0] MSIPBase = 32'(`CLINT_MSIP_BASE_ADDR(0));
+  localparam logic [31:0] MTIMECMPBase = 32'(`CLINT_MTIMECMP_BASE_ADDR(0));
+  localparam logic [31:0] MTIMEBase = 32'(`CLINT_MTIME_BASE_ADDR);
 
   initial begin
     automatic logic error;
+    automatic logic [31:0] rdata;
     driver.reset_master();
     @(posedge rst_n);
-    driver.send_write(MSIPBase, 1, 1, error);
+
+    // ---------------------------------------------------------
+    // 1. MSIP Test
+    // ---------------------------------------------------------
+    driver.write(MSIPBase, 1, 1, error);
     @(posedge clk);
-    assert(ipi[0] == 1);
-    driver.send_write(MTIMECMPBase, 32'hffff, 4'hf, error);
+    assert(ipi[0] == 1) else $error("MSIP[0] assertion failed");
+
+    // ---------------------------------------------------------
+    // 2. MTIMECMP 64-bit Access Test
+    // ---------------------------------------------------------
+    // Write Low 32-bits
+    driver.write(MTIMECMPBase, 32'hffff_ffff, 4'hf, error);
+    // Write High 32-bits
+    driver.write(MTIMECMPBase + 4, 32'h0000_0001, 4'hf, error);
+
+    // Read back to verify
+    driver.read(MTIMECMPBase, rdata, error);
+    assert(rdata == 32'hffff_ffff) else $error("MTIMECMP Low readback failed: expected ffffffff, got %h", rdata);
+    driver.read(MTIMECMPBase + 4, rdata, error);
+    assert(rdata == 32'h0000_0001) else $error("MTIMECMP High readback failed: expected 1, got %h", rdata);
+
+    // ---------------------------------------------------------
+    // 3. MTIME 64-bit Access Test & IRQ Logic
+    // ---------------------------------------------------------
+    // Disable RTC to check read/write without increment
+    rtc_en = 0;
+    #100ns;
+
+    // Set mtime to 0x1_FFFFFFFE (just below mtimecmp)
+    driver.write(MTIMEBase, 32'hffff_fffe, 4'hf, error);
+    driver.write(MTIMEBase + 4, 32'h0000_0001, 4'hf, error);
+
+    // Read back mtime
+    driver.read(MTIMEBase, rdata, error);
+    assert(rdata == 32'hffff_fffe) else $error("MTIME Low readback failed");
+    driver.read(MTIMEBase + 4, rdata, error);
+    assert(rdata == 32'h0000_0001) else $error("MTIME High readback failed");
+
+    // Check IRQ: mtime (1_fffffffe) < mtimecmp (1_ffffffff) -> irq should be 0
     @(posedge clk);
-    assert(timer_irq[0] == 0);
-    assert(timer_irq[1] == 1);
-    driver.send_write(MTIMEBase, 32'hffff_ffff, 4'hf, error);
+    assert(timer_irq[0] == 0) else $error("Timer IRQ[0] should be 0 (mtime < mtimecmp)");
+
+    // Enable RTC and Advance mtime to equal mtimecmp
+    rtc_en = 1;
+    driver.write(MTIMEBase, 32'hffff_ffff, 4'hf, error);
+    // mtime (1_ffffffff) >= mtimecmp (1_ffffffff) -> irq should be 1
+    // We wait enough time for potential sync/update
+    repeat(10) @(posedge clk);
+    assert(timer_irq[0] == 1) else $error("Timer IRQ[0] should be 1 (mtime == mtimecmp)");
+
+    // ---------------------------------------------------------
+    // 4. MTIMECMP[1] Test (High core)
+    // ---------------------------------------------------------
+    // mtimecmp[1] base is 0x4000 + 0x8 = 0x4008
+    // Set mtimecmp[1] to 0x2_00000000
+    driver.write(32'(`CLINT_MTIMECMP_BASE_ADDR(1)), 32'h0000_0000, 4'hf, error);
+    driver.write(32'(`CLINT_MTIMECMP_BASE_ADDR(1)) + 4, 32'h0000_0002, 4'hf, error);
+
+    // Disable RTC to ensure stability
+    rtc_en = 0;
+    #100ns;
+
+    // Set mtime to 0x0
+    driver.write(MTIMEBase, 0, 4'hf, error);
+    driver.write(MTIMEBase + 4, 0, 4'hf, error);
+
+    // mtime is 0. 0 < 2_00000000. irq[1] should be 0.
     @(posedge clk);
-    assert(timer_irq[0] == 1);
-    assert(timer_irq[1] == 1);
+    assert(timer_irq[1] == 0) else $error("Timer IRQ[1] should be 0 (mtime < mtimecmp[1])");
+
+    // Advance mtime high to 2
+    driver.write(MTIMEBase + 4, 32'h0000_0002, 4'hf, error); // mtime = 0x2_ffffffff
+    // mtime (2_ffffffff) >= mtimecmp[1] (2_00000000). irq[1] should be 1.
+    @(posedge clk);
+    assert(timer_irq[1] == 1) else $error("Timer IRQ[1] should be 1 (mtime > mtimecmp[1])");
+
     #3000ns;
     $finish();
   end

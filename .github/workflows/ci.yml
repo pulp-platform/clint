@@ -18,21 +18,40 @@ jobs:
     name: Check generated sources
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v7.0.1
+      - name: bender install
+        uses: pulp-platform/pulp-actions/bender-install@v2.5.1
         with:
-          python-version: 3.9
-          cache: pip
-      - name: Install Python requirements
-        run: pip install -r requirements.txt
+          version: 0.31.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
       - name: Check generated sources
-        run: make check_generated
+        run: |
+          make src/clint_reg.sv CLINT_CORES=2 && test -z "$(git status --porcelain)"
+          make src/clint_reg.sv CLINT_CORES=4 && test -n "$(git status --porcelain)"
+          make src/clint_reg.sv CLINT_CORES=2 && test -z "$(git status --porcelain)"
+
+  verilator-sim:
+    name: Run Verilator simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: bender install
+        uses: pulp-platform/pulp-actions/bender-install@v2.5.1
+        with:
+          version: 0.32.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+      - name: Install Verilator
+        uses: veryl-lang/setup-verilator@v1
+      - name: Run Verilator simulation
+        run: make vlt-run
 
   check-verilog:
     name: Check Verilog sources
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7.0.1
     - name: Run Verible
       uses: chipsalliance/verible-linter-action@main
       with:
@@ -41,22 +60,8 @@ jobs:
         fail_on_error: true
         reviewdog_reporter: github-check
 
-  check-license:
-    name: Check license
+  reuse:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Install Python requirements
-      run: pip install -r requirements.txt
-    - name: Intall license linter
-      run: |
-        cd .github
-        git clone https://github.com/lowRISC/misc-linters.git
-    - name: Check license
-      run: |
-        echo "::add-matcher::.github/license-checker-matcher.json"
-        bash -c "set -e; .github/misc-linters/licence-checker/licence-checker.py --config .github/license-checker.hjson"
-        echo "::remove-matcher owner=license-checker-matcher::"
+      - uses: actions/checkout@v7.0.1
+      - uses: fsfe/reuse-action@v6.0.0

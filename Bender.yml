@@ -3,21 +3,25 @@
 # SPDX-License-Identifier: SHL-0.51
 package:
   name: clint
-  description: RISC-V Core-local Interrupt Controller
   authors: [Florian Zaruba <zarubaf@iis.ee.ethz.ch>]
 
+remotes:
+  pulp: "https://github.com/pulp-platform"
+
 dependencies:
-  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.25.0 }
-  register_interface: { git: https://github.com/pulp-platform/register_interface.git, version: 0.3.3 }
+  common_cells: 1.40.0
+  apb: 0.2.4
 
 sources:
 # Level 0:
 - src/clint_reg_pkg.sv
 # Level 1:
-- src/clint_reg_top.sv
+- src/clint_reg.sv
 # Level 2:
 - src/clint.sv
 
-- target: test
+- target: tb
+  include_dirs:
+    - test
   files:
   - test/clint_tb.sv

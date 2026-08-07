@@ -1,0 +1,66 @@
+// Copyright 2025 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Author: Florian Zaruba <zarubaf@iis.ee.ethz.ch>
+// Author: Michael Rogenmoser <michaero@iis.ee.ethz.ch>
+
+`ifndef CLINT_RDL
+`define CLINT_RDL
+
+addrmap clint #(
+    longint unsigned NumCores = 2 // Number of cores
+) {
+    reg msip {
+        desc = "Machine Software Interrupt Pending";
+        field {
+            desc = "Machine Software Interrupt Pending";
+            sw = rw;
+            hw = r;
+        } pending[0:0] = 0x0;
+        field {
+            desc = "Reserved";
+            sw = r;
+            hw = na;
+        } rsvd[31:1] = 0x0;
+    };
+
+    reg mtimecmp {
+        desc = "Machine Timer Compare";
+        regwidth = 64;
+        accesswidth = 32;
+        field {
+            desc = "Timer Compare Value Low";
+            sw = rw;
+            hw = r;
+        } low[31:0] = 0x0;
+        field {
+            desc = "Timer Compare Value High";
+            sw = rw;
+            hw = r;
+        } high[63:32] = 0x0;
+    };
+
+    reg mtime {
+        desc = "Timer Register";
+        regwidth = 64;
+        accesswidth = 32;
+        default we = true;
+        field {
+            desc = "Machine Time (Low)";
+            sw = rw;
+            hw = rw;
+        } low[31:0] = 0x0;
+        field {
+            desc = "Machine Time (High)";
+            sw = rw;
+            hw = rw;
+        } high[63:32] = 0x0;
+    };
+
+    msip msip[NumCores] @0x0;
+    mtimecmp mtimecmp[NumCores] @0x4000 += 0x8;
+    mtime mtime @0xBFF8;
+};
+
+`endif // CLINT_RDL

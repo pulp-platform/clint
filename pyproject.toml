@@ -1,0 +1,18 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+name = "clint"
+version = "0.1.0"
+description = "RISC-V Core Local Interrupt Controller (CLINT)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "peakrdl>=1.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "peakrdl-rawheader>=0.2.2",
+]
