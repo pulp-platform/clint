@@ -36,7 +36,7 @@ all: clint $(TB_HDR)
 
 $(VSIM_SCRIPT): Bender.lock Bender.yml
 	mkdir -p scripts
-	$(BENDER) script vsim -t test --vlog-args="$(VSIM_VLOG_ARGS)" > $@
+	$(BENDER) script vsim -t tb --vlog-args="$(VSIM_VLOG_ARGS)" > $@
 
 build: $(CLINT_RTL) $(TB_HDR) $(VSIM_SCRIPT)
 	$(VLIB) $(VSIM_WORKLIB)
@@ -48,7 +48,7 @@ run: build
 	@grep "Errors: 0," vsim.log >/dev/null || (echo "Simulation failed"; exit 1)
 
 vlt-build: $(CLINT_RTL) $(TB_HDR)
-	$(VLT) $(shell $(BENDER) script verilator -t test -t simulation) \
+	$(VLT) $(shell $(BENDER) script verilator -t tb -t simulation) \
 	--timescale 1ns/1ps -Wno-fatal -Mdir $(VLT_WORKDIR) \
 	--binary --top-module $(TB_TOP)
 

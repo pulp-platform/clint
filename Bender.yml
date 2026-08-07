@@ -20,7 +20,7 @@ sources:
 # Level 2:
 - src/clint.sv
 
-- target: test
+- target: tb
   include_dirs:
     - test
   files:
