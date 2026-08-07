@@ -97,6 +97,7 @@ module clint_reg (
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
     logic decoded_err;
+    logic [15:0] decoded_addr;
     logic decoded_req;
     logic decoded_req_is_wr;
     logic [31:0] decoded_wr_data;
@@ -104,9 +105,9 @@ module clint_reg (
 
     always_comb begin
         automatic logic is_valid_addr;
-        automatic logic is_invalid_rw;
-        is_valid_addr = '1; // No error checking on valid address access
-        is_invalid_rw = '0;
+        automatic logic is_valid_rw;
+        is_valid_addr = '1; // No valid address check
+        is_valid_rw = '1; // No valid RW check
         for(int i0=0; i0<2; i0++) begin
             decoded_reg_strb.msip[i0] = cpuif_req_masked & (cpuif_addr == 16'h0 + (16)'(i0) * 16'h4);
         end
@@ -116,10 +117,11 @@ module clint_reg (
         end
         decoded_reg_strb.mtime[0] = cpuif_req_masked & (cpuif_addr == 16'hbff8);
         decoded_reg_strb.mtime[1] = cpuif_req_masked & (cpuif_addr == 16'hbffc);
-        decoded_err = (~is_valid_addr | is_invalid_rw) & decoded_req;
+        decoded_err = '0;
     end
 
     // Pass down signals to next stage
+    assign decoded_addr = cpuif_addr;
     assign decoded_req = cpuif_req_masked;
     assign decoded_req_is_wr = cpuif_req_is_wr;
     assign decoded_wr_data = cpuif_wr_data;
@@ -320,31 +322,38 @@ module clint_reg (
     // Readback
     //--------------------------------------------------------------------------
 
+    logic [15:0] rd_mux_addr;
+    assign rd_mux_addr = decoded_addr;
+
     logic readback_err;
     logic readback_done;
     logic [31:0] readback_data;
-
-    // Assign readback values to a flattened array
-    logic [31:0] readback_array[8];
-    for(genvar i0=0; i0<2; i0++) begin
-        assign readback_array[i0 * 1 + 0][0:0] = (decoded_reg_strb.msip[i0] && !decoded_req_is_wr) ? field_storage.msip[i0].pending.value : '0;
-        assign readback_array[i0 * 1 + 0][31:1] = (decoded_reg_strb.msip[i0] && !decoded_req_is_wr) ? 31'h0 : '0;
-    end
-    for(genvar i0=0; i0<2; i0++) begin
-        assign readback_array[i0 * 2 + 2][31:0] = (decoded_reg_strb.mtimecmp[i0][0] && !decoded_req_is_wr) ? field_storage.mtimecmp[i0].low.value : '0;
-        assign readback_array[i0 * 2 + 3][31:0] = (decoded_reg_strb.mtimecmp[i0][1] && !decoded_req_is_wr) ? field_storage.mtimecmp[i0].high.value : '0;
-    end
-    assign readback_array[6][31:0] = (decoded_reg_strb.mtime[0] && !decoded_req_is_wr) ? field_storage.mtime.low.value : '0;
-    assign readback_array[7][31:0] = (decoded_reg_strb.mtime[1] && !decoded_req_is_wr) ? field_storage.mtime.high.value : '0;
-
-    // Reduce the array
     always_comb begin
         automatic logic [31:0] readback_data_var;
+        readback_data_var = '0;
+        for(int i0=0; i0<2; i0++) begin
+            if(rd_mux_addr == 16'h0 + (16)'(i0) * 16'h4) begin
+                readback_data_var[0] = field_storage.msip[i0].pending.value;
+                readback_data_var[31:1] = 31'h0;
+            end
+        end
+        for(int i0=0; i0<2; i0++) begin
+            if(rd_mux_addr == 16'h4000 + (16)'(i0) * 16'h8) begin
+                readback_data_var[31:0] = field_storage.mtimecmp[i0].low.value;
+            end
+            if(rd_mux_addr == 16'h4004 + (16)'(i0) * 16'h8) begin
+                readback_data_var[31:0] = field_storage.mtimecmp[i0].high.value;
+            end
+        end
+        if(rd_mux_addr == 16'hbff8) begin
+            readback_data_var[31:0] = field_storage.mtime.low.value;
+        end
+        if(rd_mux_addr == 16'hbffc) begin
+            readback_data_var[31:0] = field_storage.mtime.high.value;
+        end
+        readback_data = readback_data_var;
         readback_done = decoded_req & ~decoded_req_is_wr;
         readback_err = '0;
-        readback_data_var = '0;
-        for(int i=0; i<8; i++) readback_data_var |= readback_array[i];
-        readback_data = readback_data_var;
     end
 
     assign cpuif_rd_ack = readback_done;
