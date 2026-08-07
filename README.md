@@ -12,16 +12,13 @@ The CLINT uses an **AMBA APB** interface for register access.
 
 ## Requirements
 
-The register interface is generated from a SystemRDL description. To (re-)generate the RTL, the following tool is required:
-- [PeakRDL](https://github.com/SystemRDL/PeakRDL)
+The register interface is generated from a SystemRDL description, but the generated RTL is checked in. Nothing is required to simply *use* the CLINT — [PeakRDL](https://github.com/SystemRDL/PeakRDL) is only needed to regenerate it, for example with a different number of cores. The testbench additionally requires the `peakrdl-rawheader` plugin for its register header.
 
-You can install it via pip:
+To work on this repository, we recommend [uv](https://docs.astral.sh/uv/): it provides the versions pinned in `uv.lock`, so `make` works out of the box. Alternatively, install the tools yourself and build with `make PEAKRDL=peakrdl`:
 
 ```bash
-pip install peakrdl
+pip install peakrdl peakrdl-rawheader
 ```
-
-For development and running tests, we use [uv](https://docs.astral.sh/uv/) to manage Python dependencies, including the `peakrdl-rawheader` plugin used for testbench header generation.
 
 
 ## Reconfiguring CLINT
@@ -37,5 +34,7 @@ CLINTCORES = 4
 include $(CLINTROOT)/clint.mk
 
 # Rebuild CLINT RTL
-all: $(CLINTROOT)/src/clint_reg.sv
+all: $(CLINT_RTL)
 ```
+
+This expects `peakrdl` on your `PATH`
