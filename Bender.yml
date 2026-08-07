@@ -5,9 +5,12 @@ package:
   name: clint
   authors: [Florian Zaruba <zarubaf@iis.ee.ethz.ch>]
 
+remotes:
+  pulp: "https://github.com/pulp-platform"
+
 dependencies:
-  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.39.0 }
-  apb: { git: "https://github.com/pulp-platform/apb.git", version: 0.2.4 }
+  common_cells: 1.40.0
+  apb: 0.2.4
 
 sources:
 # Level 0:
