@@ -16,7 +16,7 @@ VLIB ?= vlib
 VMAP ?= vmap
 OSEDA ?=
 TB_TOP ?= clint_tb
-TB_HDR ?= $(CLINTROOT)/test/clint_reg_defs.svh
+TB_HDR ?= $(CLINT_ROOT)/test/clint_reg_defs.svh
 VSIM_SCRIPT ?= scripts/compile.tcl
 VSIM_WORKLIB ?= work-vsim
 VSIM_VLOG_ARGS ?= -work $(VSIM_WORKLIB)
@@ -24,12 +24,12 @@ VLT ?= $(OSEDA) verilator
 VLT_WORKDIR ?= work-vlt
 VLT_BIN ?= $(VLT_WORKDIR)/Vclint_tb
 
-CLINTROOT = .
-CLINTCORES ?= 2
+CLINT_ROOT = .
+CLINT_CORES ?= 2
 include clint.mk
 
-$(TB_HDR): $(CLINTROOT)/rdl/clint.rdl $(CLINTROOT)/.generated
-	$(PEAKRDL) raw-header $< -o $@ -P NumCores=$(CLINTCORES) --format svh
+$(TB_HDR): $(CLINT_ROOT)/rdl/clint.rdl $(CLINT_ROOT)/.generated
+	$(PEAKRDL) raw-header $< -o $@ -P NumCores=$(CLINT_CORES) --format svh
 	@sed -i '1i// Copyright 2025 ETH Zurich and University of Bologna.\n// Licensed under the Apache License, Version 2.0, see LICENSE for details.\n// SPDX-License-Identifier: Apache-2.0\n' $@
 
 all: clint $(TB_HDR)

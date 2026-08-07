@@ -26,12 +26,12 @@ pip install peakrdl peakrdl-rawheader
 To simplify CLINT reconfiguration in your project, you can include the GNU Make fragment `clint.mk` in your makefile, for example:
 
 ```make
-CLINTROOT ?= $(shell bender path clint)
+CLINT_ROOT ?= $(shell bender path clint)
 
 # Alternative number of cores
-CLINTCORES = 4
+CLINT_CORES = 4
 
-include $(CLINTROOT)/clint.mk
+include $(CLINT_ROOT)/clint.mk
 
 # Rebuild CLINT RTL
 all: $(CLINT_RTL)
