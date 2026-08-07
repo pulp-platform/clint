@@ -26,11 +26,12 @@ CLINT_FORCE:
 $(CLINTROOT)/.generated: CLINT_FORCE
 	@printf '%s\n' "$(CLINTCORES)" | cmp -s - $@ || printf '%s\n' "$(CLINTCORES)" > $@
 
-$(CLINTROOT)/src/clint_reg.sv: $(CLINTROOT)/src/clint_reg_pkg.sv
-$(CLINTROOT)/src/clint_reg_pkg.sv: $(CLINTROOT)/rdl/clint.rdl $(CLINTROOT)/.generated
-	$(PEAKRDL) regblock $< -o $(CLINTROOT)/src --cpuif apb4-flat --default-reset arst_n --module-name clint_reg --package-name clint_reg_pkg -P NumCores=$(CLINTCORES)
-	@sed -i '1i// Copyright 2025 ETH Zurich and University of Bologna.\n// Licensed under the Apache License, Version 2.0, see LICENSE for details.\n// SPDX-License-Identifier: Apache-2.0\n' $(CLINTROOT)/src/clint_reg*.sv
+CLINT_RTL = $(CLINTROOT)/src/clint_reg.sv $(CLINTROOT)/src/clint_reg_pkg.sv
 
-clint:
-	@echo "[PULP] Generate CLINT (CLINTCORES=$(CLINTCORES))"
-	@$(MAKE) -B $(CLINTROOT)/src/clint_reg.sv
+$(CLINTROOT)/src/%_reg.sv $(CLINTROOT)/src/%_reg_pkg.sv: $(CLINTROOT)/rdl/%.rdl $(CLINTROOT)/.generated
+	$(PEAKRDL) regblock $< -o $(CLINTROOT)/src --cpuif apb4-flat --default-reset arst_n --module-name $*_reg --package-name $*_reg_pkg -P NumCores=$(CLINTCORES)
+	@sed -i '1i// Copyright 2025 ETH Zurich and University of Bologna.\n// Licensed under the Apache License, Version 2.0, see LICENSE for details.\n// SPDX-License-Identifier: Apache-2.0\n' $(CLINTROOT)/src/$*_reg.sv $(CLINTROOT)/src/$*_reg_pkg.sv
+
+.PHONY: clint
+clint: $(CLINT_RTL)
+	@echo "[PULP] CLINT sources up to date (CLINTCORES=$(CLINTCORES))"
